@@ -49,4 +49,5 @@ numpyImages = dataManagerTrain.getNumpyImages()
 numpyGT = dataManagerTrain.getNumpyGT()
 print numpyImages['Case00.mhd'].shape
 print numpyGT['Case00_segmentation.mhd'].shape
+print "hellodmp"
 
