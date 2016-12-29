@@ -38,16 +38,29 @@ dataManagerTrain = DM.DataManager(params['ModelParams']['dirTrain'],
                                   params['DataManagerParams'])
 
 #dataManagerTrain.loadTrainingData() #loads in sitk format
-dataManagerTrain.createImageFileList()
-print "fileList=",dataManagerTrain.fileList
-dataManagerTrain.createGTFileList()
-print "gtlist=", dataManagerTrain.gtList
-dataManagerTrain.loadImages()
-dataManagerTrain.loadGT()
-
+dataManagerTrain.loadTrainingData()
 numpyImages = dataManagerTrain.getNumpyImages()
 numpyGT = dataManagerTrain.getNumpyGT()
-print numpyImages['Case00.mhd'].shape
-print numpyGT['Case00_segmentation.mhd'].shape
+
+howManyImages = len(dataManagerTrain.sitkImages)
+howManyGT = len(dataManagerTrain.sitkGT)
+
+for key in numpyImages:
+    print numpyImages[key]
+    #print numpyImages[key][numpyImages[key] > 0]
+    mean = np.mean(numpyImages[key][numpyImages[key] > 0])
+    std = np.std(numpyImages[key][numpyImages[key] > 0])
+    print mean, std
+
+    numpyImages[key] -= mean
+    numpyImages[key] /= std
+    print np.max(numpyImages[key]), np.min(numpyImages[key])
+
+assert howManyGT == howManyImages
+
+print "The dataset has shape: data - " + str(howManyImages) + ". labels - " + str(howManyGT)
+
+print numpyImages['Case26.mhd'].shape
+print numpyGT['Case26_segmentation.mhd'].shape
 print "hellodmp"
 
