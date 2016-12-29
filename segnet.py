@@ -49,5 +49,9 @@ def pool_layer(bottom):
 def eltwize_relu(bottom1, bottom2):
     residual_eltwise = L.Eltwise(bottom1, bottom2, eltwise_param=dict(operation=1))
     residual_eltwise_relu = L.ReLU(residual_eltwise, in_place=True)
-
     return residual_eltwise, residual_eltwise_relu
+
+def split_concat(bottom):
+    bottom_layers = [bottom]*16
+    concat = L.Concat(*bottom_layers)
+    return concat
