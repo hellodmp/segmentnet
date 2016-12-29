@@ -9,8 +9,10 @@ def lenet(lmdb, batch_size):
     n.data, n.label = L.Data(batch_size=batch_size,
                              backend=P.Data.LMDB, source=lmdb,
                              transform_param=dict(scale=1. / 255), ntop=2)
+
     n.conv1 = L.Convolution(n.data, kernel_size=5,
                             num_output=20, weight_filler=dict(type='xavier'))
+
     n.pool1 = L.Pooling(n.conv1, kernel_size=2,
                         stride=2, pool=P.Pooling.MAX)
     n.conv2 = L.Convolution(n.pool1, kernel_size=5,
