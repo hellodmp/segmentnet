@@ -71,6 +71,18 @@ def deconv(bottom, num_output):
     relu = L.ReLU(conv, in_place=True)
     return relu
 
+def conv_relu_conv(bottom, num_output):
+    conv1 = L.Convolution(bottom, num_output=num_output, kernel_size=2, stride=2, pad=0,
+                         param=[dict(lr_mult=1, decay_mult=1), dict(lr_mult=2, decay_mult=0)],
+                         weight_filler=dict(type='msra', variance_norm=2),
+                         bias_filler=dict(type='constant', value=0))
+    relu = L.ReLU(conv1, in_place=True)
+    conv2 = L.Convolution(relu, num_output=num_output, kernel_size=2, stride=2, pad=0,
+                         param=[dict(lr_mult=1, decay_mult=1), dict(lr_mult=2, decay_mult=0)],
+                         weight_filler=dict(type='msra', variance_norm=2),
+                         bias_filler=dict(type='constant', value=0))
+    return conv2
+
 def add_layer(bottom1, bottom2):
     residual_eltwise = L.Eltwise(bottom1, bottom2, eltwise_param=dict(operation=1))
     residual_eltwise_relu = L.ReLU(residual_eltwise, in_place=True)
@@ -107,13 +119,29 @@ class SegNet(object):
 
         net.conv5 = conv_4(net.pooling4, 256)
         net.block5 = add_layer(net.pooling4, net.conv5)
-        #net.pooling4 = down_conv(net.block4, 256)
-        '''
-        net.block6 = add_layer(net.down_conv5, net.conv5)
-        net.deconv6 = deconv(net.block6, 128)
-        net.concat6 = L.Concat(net.deconv6,net.conv4)
-        net.conv6 = conv_3(net.concat6, 256)
-        '''
+        net.depooling1 = deconv(net.block5, 128)
+        net.concat5 = L.Concat(net.depooling1, net.block4)
+
+        net.conv6 = conv_4(net.concat5, 256)
+        net.block6 = add_layer(net.concat5, net.conv6)
+        net.depooling2 = deconv(net.block6, 64)
+        net.concat6 = L.Concat(net.depooling2, net.block3)
+
+        net.conv7 = conv_3(net.concat6, 128)
+        net.block7 = add_layer(net.concat6, net.conv7)
+        net.depooling3 = deconv(net.block6, 32)
+        net.concat7 = L.Concat(net.depooling3, net.block2)
+
+        net.conv8 = conv_2(net.concat7, 64)
+        net.block8 = add_layer(net.concat7, net.conv8)
+        net.depooling4 = deconv(net.block6, 16)
+        net.concat8 = L.Concat(net.depooling4, net.block1)
+
+        net.conv9 = conv_1(net.concat8, 32)
+        net.block9 = add_layer(net.concat8, net.conv9)
+        output = conv_relu_conv(net.block9,2)
+
+
         return net.to_proto()
 
 if __name__ == "__main__":
