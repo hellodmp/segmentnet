@@ -64,10 +64,11 @@ def down_conv(bottom, num_output):
     return relu
 
 def deconv(bottom, num_output):
-    conv = L.Deconvolution(bottom, num_output=num_output, kernel_size=2, stride=2, pad=0,
-                         param=[dict(lr_mult=1, decay_mult=1), dict(lr_mult=2, decay_mult=0)],
-                         weight_filler=dict(type='msra', variance_norm=2),
-                         bias_filler=dict(type='constant', value=0))
+    conv = L.Deconvolution(bottom,
+                           param=[dict(lr_mult=1, decay_mult=1), dict(lr_mult=2, decay_mult=0)],
+                           convolution_param=dict(num_output=num_output, kernel_size=2, stride=2,pad=0,
+                                                  weight_filler=dict(type="msra",variance_norm=2),
+                                                  bias_filler=dict(type="constant",value=0)))
     relu = L.ReLU(conv, in_place=True)
     return relu
 
@@ -141,9 +142,9 @@ class SegNet(object):
         net.block9 = add_layer(net.concat8, net.conv9)
         net.output = conv_relu_conv(net.block9,2)
 
-        #net.data_flat = L.Reshape(net.output, shape=dict(dim=[0,2,1048576]))
-        #net.lab_flat = L.Reshape(net.label, shape=dict(dim=[0, 2, 1048576]))
-        #net.softmax = L.Softmax(net.output)
+        net.data_flat = L.Reshape(net.output, shape=dict(dim=[0,2,1048576]))
+        net.lab_flat = L.Reshape(net.label, shape=dict(dim=[0, 2, 1048576]))
+        net.softmax = L.Softmax(net.output)
         #net.loss = L.SoftmaxWithLoss(net.output,net.lab_flat)
 
         return net.to_proto()
