@@ -98,8 +98,8 @@ class SegNet(object):
 
     def layers_proto(self, batch_size, phase='TRAIN'):
         net = caffe.NetSpec()
-        net.data, net.label = L.Data(batch_size=batch_size, ntop=2)
 
+        net.data, net.label = L.Data(batch_size=batch_size, ntop=2)
         net.conv1 = conv_1(net.data, 16)
         net.concat1 = split_concat(net.data)
         net.block1 = add_layer(net.concat1, net.conv1)
@@ -139,8 +139,12 @@ class SegNet(object):
 
         net.conv9 = conv_1(net.concat8, 32)
         net.block9 = add_layer(net.concat8, net.conv9)
-        output = conv_relu_conv(net.block9,2)
+        net.output = conv_relu_conv(net.block9,2)
 
+        #net.data_flat = L.Reshape(net.output, shape=dict(dim=[0,2,1048576]))
+        #net.lab_flat = L.Reshape(net.label, shape=dict(dim=[0, 2, 1048576]))
+        #net.softmax = L.Softmax(net.output)
+        #net.loss = L.SoftmaxWithLoss(net.output,net.lab_flat)
 
         return net.to_proto()
 
