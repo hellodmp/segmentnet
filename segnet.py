@@ -24,7 +24,7 @@ def conv_3(bottom, num_output=64, kernel_size=5, stride=1, pad=2):
                          weight_filler=dict(type='msra', variance_norm=2),
                          bias_filler=dict(type='constant', value=0))
     #conv_bn = L.BatchNorm(conv, use_global_stats=False, in_place=True)
-    relu1 = L.ReLU(conv1, in_place=True)
+    relu1 = L.PReLU(conv1, in_place=True)
 
     conv2 = L.Convolution(relu1, num_output=num_output, kernel_size=kernel_size, stride=stride, pad=pad,
                           param=[dict(lr_mult=1, decay_mult=1), dict(lr_mult=2, decay_mult=0)],
@@ -39,14 +39,14 @@ def conv_4(bottom, num_output=64, kernel_size=5, stride=1, pad=2):
                          weight_filler=dict(type='msra', variance_norm=2),
                          bias_filler=dict(type='constant', value=0))
     #conv_bn = L.BatchNorm(conv, use_global_stats=False, in_place=True)
-    relu1 = L.ReLU(conv1, in_place=True)
+    relu1 = L.PReLU(conv1, in_place=True)
 
     conv2 = L.Convolution(relu1, num_output=num_output, kernel_size=kernel_size, stride=stride, pad=pad,
                           param=[dict(lr_mult=1, decay_mult=1), dict(lr_mult=2, decay_mult=0)],
                           weight_filler=dict(type='msra', std=0.01),
                           bias_filler=dict(type='constant', value=0))
     # conv_bn = L.BatchNorm(conv, use_global_stats=False, in_place=True)
-    relu2 = L.ReLU(conv2, in_place=True)
+    relu2 = L.PReLU(conv2, in_place=True)
 
     conv3 = L.Convolution(relu2, num_output=num_output, kernel_size=kernel_size, stride=stride, pad=pad,
                           param=[dict(lr_mult=1, decay_mult=1), dict(lr_mult=2, decay_mult=0)],
@@ -55,12 +55,20 @@ def conv_4(bottom, num_output=64, kernel_size=5, stride=1, pad=2):
     # conv_bn = L.BatchNorm(conv, use_global_stats=False, in_place=True)
     return conv3
 
+def fcn(bottom, num_output=64, kernel_size=1, stride=1, pad=0):
+    conv1 = L.Convolution(bottom, num_output=num_output, kernel_size=kernel_size, stride=stride, pad=pad,
+                         param=[dict(lr_mult=1, decay_mult=1), dict(lr_mult=2, decay_mult=0)],
+                         weight_filler=dict(type='msra', variance_norm=2),
+                         bias_filler=dict(type='constant', value=0))
+    #conv_bn = L.BatchNorm(conv, use_global_stats=False, in_place=True)
+    return conv1
+
 def down_conv(bottom, num_output):
     conv = L.Convolution(bottom, num_output=num_output, kernel_size=2, stride=2, pad=0,
                          param=[dict(lr_mult=1, decay_mult=1), dict(lr_mult=2, decay_mult=0)],
                          weight_filler=dict(type='msra', variance_norm=2),
                          bias_filler=dict(type='constant', value=0))
-    relu = L.ReLU(conv, in_place=True)
+    relu = L.PReLU(conv, in_place=True)
     return relu
 
 def deconv(bottom, num_output):
@@ -69,7 +77,7 @@ def deconv(bottom, num_output):
                            convolution_param=dict(num_output=num_output, kernel_size=2, stride=2,pad=0,
                                                   weight_filler=dict(type="msra",variance_norm=2),
                                                   bias_filler=dict(type="constant",value=0)))
-    relu = L.ReLU(conv, in_place=True)
+    relu = L.PReLU(conv, in_place=True)
     return relu
 
 def conv_relu_conv(bottom, num_output):
@@ -77,7 +85,7 @@ def conv_relu_conv(bottom, num_output):
                          param=[dict(lr_mult=1, decay_mult=1), dict(lr_mult=2, decay_mult=0)],
                          weight_filler=dict(type='msra', variance_norm=2),
                          bias_filler=dict(type='constant', value=0))
-    relu = L.ReLU(conv1, in_place=True)
+    relu = L.PReLU(conv1, in_place=True)
     conv2 = L.Convolution(relu, num_output=num_output, kernel_size=2, stride=2, pad=0,
                          param=[dict(lr_mult=1, decay_mult=1), dict(lr_mult=2, decay_mult=0)],
                          weight_filler=dict(type='msra', variance_norm=2),
@@ -86,7 +94,7 @@ def conv_relu_conv(bottom, num_output):
 
 def add_layer(bottom1, bottom2):
     residual_eltwise = L.Eltwise(bottom1, bottom2, eltwise_param=dict(operation=1))
-    residual_eltwise_relu = L.ReLU(residual_eltwise, in_place=True)
+    residual_eltwise_relu = L.PReLU(residual_eltwise, in_place=True)
     return residual_eltwise_relu
 
 def split_concat(bottom):
@@ -94,6 +102,7 @@ def split_concat(bottom):
                      bottom, bottom, bottom, bottom, bottom, bottom, bottom, bottom]
     concat = L.Concat(*bottom_layers)
     return concat
+
 
 class SegNet(object):
 
@@ -130,21 +139,21 @@ class SegNet(object):
 
         net.conv7 = conv_3(net.concat6, 128)
         net.block7 = add_layer(net.concat6, net.conv7)
-        net.depooling3 = deconv(net.block6, 32)
+        net.depooling3 = deconv(net.block7, 32)
         net.concat7 = L.Concat(net.depooling3, net.block2)
 
         net.conv8 = conv_2(net.concat7, 64)
         net.block8 = add_layer(net.concat7, net.conv8)
-        net.depooling4 = deconv(net.block6, 16)
+        net.depooling4 = deconv(net.block8, 16)
         net.concat8 = L.Concat(net.depooling4, net.block1)
 
         net.conv9 = conv_1(net.concat8, 32)
         net.block9 = add_layer(net.concat8, net.conv9)
-        net.output = conv_relu_conv(net.block9,2)
+        net.output = fcn(net.block9,2)
 
         net.data_flat = L.Reshape(net.output, shape=dict(dim=[0,2,1048576]))
-        net.lab_flat = L.Reshape(net.label, shape=dict(dim=[0, 2, 1048576]))
-        net.softmax = L.Softmax(net.output)
+        net.label_flat = L.Reshape(net.label, shape=dict(dim=[0,1,1048576]))
+        net.softmax_out = L.Softmax(net.data_flat)
         #net.loss = L.SoftmaxWithLoss(net.output,net.lab_flat)
 
         return net.to_proto()
