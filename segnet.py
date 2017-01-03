@@ -150,15 +150,19 @@ class SegNet(object):
         net.conv9 = conv_1(net.concat8, 32)
         net.block9 = add_layer(net.concat8, net.conv9)
         net.output = fcn(net.block9,2)
-
-        net.data_flat = L.Reshape(net.output, shape=dict(dim=[0,2,1048576]))
-        net.label_flat = L.Reshape(net.label, shape=dict(dim=[0,1,1048576]))
-        net.softmax_out = L.Softmax(net.data_flat)
-        #net.loss = L.SoftmaxWithLoss(net.output,net.lab_flat)
+        #train
+        if phase=="TRAIN":
+            net.data_flat = L.Reshape(net.output, shape=dict(dim=[0,2,1048576]))
+            net.label_flat = L.Reshape(net.label, shape=dict(dim=[0,1,1048576]))
+            net.softmax_out = L.Softmax(net.data_flat)
+        elif phase=="TEST":
+            net.data_flat = L.Reshape(net.output, shape=dict(dim=[1, 2, 1048576]))
+            net.softmax_out = L.Softmax(net.data_flat)
+            net.labelmap = L.Reshape(net.softmax_out, shape=dict(dim=[1,2,128,128,64]))
 
         return net.to_proto()
 
 if __name__ == "__main__":
     net = SegNet()
-    netstr = net.layers_proto(2)
+    netstr = net.layers_proto(2,"TRAIN")
     print netstr

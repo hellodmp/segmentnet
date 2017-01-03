@@ -20,74 +20,9 @@ layer {
   }
   convolution_param {
     num_output: 16
-    pad: 2
-    kernel_size: 5
+    pad: 1
+    kernel_size: 3
     stride: 1
-    weight_filler {
-      type: "msra"
-      variance_norm: AVERAGE
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
-layer {
-  name: "concat1"
-  type: "Concat"
-  bottom: "data"
-  bottom: "data"
-  bottom: "data"
-  bottom: "data"
-  bottom: "data"
-  bottom: "data"
-  bottom: "data"
-  bottom: "data"
-  bottom: "data"
-  bottom: "data"
-  bottom: "data"
-  bottom: "data"
-  bottom: "data"
-  bottom: "data"
-  bottom: "data"
-  bottom: "data"
-  top: "concat1"
-}
-layer {
-  name: "Eltwise1"
-  type: "Eltwise"
-  bottom: "concat1"
-  bottom: "conv1"
-  top: "Eltwise1"
-  eltwise_param {
-    operation: SUM
-  }
-}
-layer {
-  name: "block1"
-  type: "PReLU"
-  bottom: "Eltwise1"
-  top: "Eltwise1"
-}
-layer {
-  name: "Convolution1"
-  type: "Convolution"
-  bottom: "Eltwise1"
-  top: "Convolution1"
-  param {
-    lr_mult: 1
-    decay_mult: 1
-  }
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  convolution_param {
-    num_output: 32
-    pad: 0
-    kernel_size: 2
-    stride: 2
     weight_filler {
       type: "msra"
       variance_norm: AVERAGE
@@ -100,15 +35,9 @@ layer {
 }
 layer {
   name: "pooling1"
-  type: "PReLU"
-  bottom: "Convolution1"
-  top: "Convolution1"
-}
-layer {
-  name: "conv2"
   type: "Convolution"
-  bottom: "Convolution1"
-  top: "conv2"
+  bottom: "conv1"
+  top: "pooling1"
   param {
     lr_mult: 1
     decay_mult: 1
@@ -119,9 +48,9 @@ layer {
   }
   convolution_param {
     num_output: 32
-    pad: 2
-    kernel_size: 5
-    stride: 1
+    pad: 0
+    kernel_size: 2
+    stride: 2
     weight_filler {
       type: "msra"
       variance_norm: AVERAGE
@@ -133,26 +62,10 @@ layer {
   }
 }
 layer {
-  name: "Eltwise2"
-  type: "Eltwise"
-  bottom: "Convolution1"
-  bottom: "conv2"
-  top: "Eltwise2"
-  eltwise_param {
-    operation: SUM
-  }
-}
-layer {
-  name: "block2"
-  type: "PReLU"
-  bottom: "Eltwise2"
-  top: "Eltwise2"
-}
-layer {
-  name: "Convolution2"
+  name: "res1"
   type: "Convolution"
-  bottom: "Eltwise2"
-  top: "Convolution2"
+  bottom: "pooling1"
+  top: "res1"
   param {
     lr_mult: 1
     decay_mult: 1
@@ -162,10 +75,10 @@ layer {
     decay_mult: 0
   }
   convolution_param {
-    num_output: 64
-    pad: 0
-    kernel_size: 2
-    stride: 2
+    num_output: 32
+    pad: 1
+    kernel_size: 3
+    stride: 1
     weight_filler {
       type: "msra"
       variance_norm: AVERAGE
@@ -178,15 +91,9 @@ layer {
 }
 layer {
   name: "pooling2"
-  type: "PReLU"
-  bottom: "Convolution2"
-  top: "Convolution2"
-}
-layer {
-  name: "Convolution3"
   type: "Convolution"
-  bottom: "Convolution2"
-  top: "Convolution3"
+  bottom: "res1"
+  top: "pooling2"
   param {
     lr_mult: 1
     decay_mult: 1
@@ -197,87 +104,37 @@ layer {
   }
   convolution_param {
     num_output: 64
-    pad: 2
-    kernel_size: 5
-    stride: 1
-    weight_filler {
-      type: "msra"
-      variance_norm: AVERAGE
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
-layer {
-  name: "PReLU1"
-  type: "PReLU"
-  bottom: "Convolution3"
-  top: "Convolution3"
-}
-layer {
-  name: "conv3"
-  type: "Convolution"
-  bottom: "Convolution3"
-  top: "conv3"
-  param {
-    lr_mult: 1
-    decay_mult: 1
-  }
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  convolution_param {
-    num_output: 64
-    pad: 2
-    kernel_size: 5
-    stride: 1
-    weight_filler {
-      type: "msra"
-      variance_norm: AVERAGE
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
-layer {
-  name: "Eltwise3"
-  type: "Eltwise"
-  bottom: "Convolution2"
-  bottom: "conv3"
-  top: "Eltwise3"
-  eltwise_param {
-    operation: SUM
-  }
-}
-layer {
-  name: "block3"
-  type: "PReLU"
-  bottom: "Eltwise3"
-  top: "Eltwise3"
-}
-layer {
-  name: "Convolution4"
-  type: "Convolution"
-  bottom: "Eltwise3"
-  top: "Convolution4"
-  param {
-    lr_mult: 1
-    decay_mult: 1
-  }
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  convolution_param {
-    num_output: 128
     pad: 0
     kernel_size: 2
     stride: 2
+    weight_filler {
+      type: "msra"
+      variance_norm: AVERAGE
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "res2"
+  type: "Convolution"
+  bottom: "pooling2"
+  top: "res2"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 64
+    pad: 1
+    kernel_size: 3
+    stride: 1
     weight_filler {
       type: "msra"
       variance_norm: AVERAGE
@@ -290,273 +147,9 @@ layer {
 }
 layer {
   name: "pooling3"
-  type: "PReLU"
-  bottom: "Convolution4"
-  top: "Convolution4"
-}
-layer {
-  name: "Convolution5"
   type: "Convolution"
-  bottom: "Convolution4"
-  top: "Convolution5"
-  param {
-    lr_mult: 1
-    decay_mult: 1
-  }
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  convolution_param {
-    num_output: 128
-    pad: 2
-    kernel_size: 5
-    stride: 1
-    weight_filler {
-      type: "msra"
-      variance_norm: AVERAGE
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
-layer {
-  name: "PReLU2"
-  type: "PReLU"
-  bottom: "Convolution5"
-  top: "Convolution5"
-}
-layer {
-  name: "Convolution6"
-  type: "Convolution"
-  bottom: "Convolution5"
-  top: "Convolution6"
-  param {
-    lr_mult: 1
-    decay_mult: 1
-  }
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  convolution_param {
-    num_output: 128
-    pad: 2
-    kernel_size: 5
-    stride: 1
-    weight_filler {
-      type: "msra"
-      std: 0.01
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
-layer {
-  name: "PReLU3"
-  type: "PReLU"
-  bottom: "Convolution6"
-  top: "Convolution6"
-}
-layer {
-  name: "conv4"
-  type: "Convolution"
-  bottom: "Convolution6"
-  top: "conv4"
-  param {
-    lr_mult: 1
-    decay_mult: 1
-  }
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  convolution_param {
-    num_output: 128
-    pad: 2
-    kernel_size: 5
-    stride: 1
-    weight_filler {
-      type: "msra"
-      variance_norm: AVERAGE
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
-layer {
-  name: "Eltwise4"
-  type: "Eltwise"
-  bottom: "Convolution4"
-  bottom: "conv4"
-  top: "Eltwise4"
-  eltwise_param {
-    operation: SUM
-  }
-}
-layer {
-  name: "block4"
-  type: "PReLU"
-  bottom: "Eltwise4"
-  top: "Eltwise4"
-}
-layer {
-  name: "Convolution7"
-  type: "Convolution"
-  bottom: "Eltwise4"
-  top: "Convolution7"
-  param {
-    lr_mult: 1
-    decay_mult: 1
-  }
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  convolution_param {
-    num_output: 256
-    pad: 0
-    kernel_size: 2
-    stride: 2
-    weight_filler {
-      type: "msra"
-      variance_norm: AVERAGE
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
-layer {
-  name: "pooling4"
-  type: "PReLU"
-  bottom: "Convolution7"
-  top: "Convolution7"
-}
-layer {
-  name: "Convolution8"
-  type: "Convolution"
-  bottom: "Convolution7"
-  top: "Convolution8"
-  param {
-    lr_mult: 1
-    decay_mult: 1
-  }
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  convolution_param {
-    num_output: 256
-    pad: 2
-    kernel_size: 5
-    stride: 1
-    weight_filler {
-      type: "msra"
-      variance_norm: AVERAGE
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
-layer {
-  name: "PReLU4"
-  type: "PReLU"
-  bottom: "Convolution8"
-  top: "Convolution8"
-}
-layer {
-  name: "Convolution9"
-  type: "Convolution"
-  bottom: "Convolution8"
-  top: "Convolution9"
-  param {
-    lr_mult: 1
-    decay_mult: 1
-  }
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  convolution_param {
-    num_output: 256
-    pad: 2
-    kernel_size: 5
-    stride: 1
-    weight_filler {
-      type: "msra"
-      std: 0.01
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
-layer {
-  name: "PReLU5"
-  type: "PReLU"
-  bottom: "Convolution9"
-  top: "Convolution9"
-}
-layer {
-  name: "conv5"
-  type: "Convolution"
-  bottom: "Convolution9"
-  top: "conv5"
-  param {
-    lr_mult: 1
-    decay_mult: 1
-  }
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  convolution_param {
-    num_output: 256
-    pad: 2
-    kernel_size: 5
-    stride: 1
-    weight_filler {
-      type: "msra"
-      variance_norm: AVERAGE
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
-layer {
-  name: "Eltwise5"
-  type: "Eltwise"
-  bottom: "Convolution7"
-  bottom: "conv5"
-  top: "Eltwise5"
-  eltwise_param {
-    operation: SUM
-  }
-}
-layer {
-  name: "block5"
-  type: "PReLU"
-  bottom: "Eltwise5"
-  top: "Eltwise5"
-}
-layer {
-  name: "Deconvolution1"
-  type: "Deconvolution"
-  bottom: "Eltwise5"
-  top: "Deconvolution1"
+  bottom: "res2"
+  top: "pooling3"
   param {
     lr_mult: 1
     decay_mult: 1
@@ -570,6 +163,34 @@ layer {
     pad: 0
     kernel_size: 2
     stride: 2
+    weight_filler {
+      type: "msra"
+      variance_norm: AVERAGE
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "res3"
+  type: "Convolution"
+  bottom: "pooling3"
+  top: "res3"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 128
+    pad: 1
+    kernel_size: 3
+    stride: 1
     weight_filler {
       type: "msra"
       variance_norm: AVERAGE
@@ -582,134 +203,9 @@ layer {
 }
 layer {
   name: "depooling1"
-  type: "PReLU"
-  bottom: "Deconvolution1"
-  top: "Deconvolution1"
-}
-layer {
-  name: "concat5"
-  type: "Concat"
-  bottom: "Deconvolution1"
-  bottom: "Eltwise4"
-  top: "concat5"
-}
-layer {
-  name: "Convolution10"
-  type: "Convolution"
-  bottom: "concat5"
-  top: "Convolution10"
-  param {
-    lr_mult: 1
-    decay_mult: 1
-  }
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  convolution_param {
-    num_output: 256
-    pad: 2
-    kernel_size: 5
-    stride: 1
-    weight_filler {
-      type: "msra"
-      variance_norm: AVERAGE
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
-layer {
-  name: "PReLU6"
-  type: "PReLU"
-  bottom: "Convolution10"
-  top: "Convolution10"
-}
-layer {
-  name: "Convolution11"
-  type: "Convolution"
-  bottom: "Convolution10"
-  top: "Convolution11"
-  param {
-    lr_mult: 1
-    decay_mult: 1
-  }
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  convolution_param {
-    num_output: 256
-    pad: 2
-    kernel_size: 5
-    stride: 1
-    weight_filler {
-      type: "msra"
-      std: 0.01
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
-layer {
-  name: "PReLU7"
-  type: "PReLU"
-  bottom: "Convolution11"
-  top: "Convolution11"
-}
-layer {
-  name: "conv6"
-  type: "Convolution"
-  bottom: "Convolution11"
-  top: "conv6"
-  param {
-    lr_mult: 1
-    decay_mult: 1
-  }
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  convolution_param {
-    num_output: 256
-    pad: 2
-    kernel_size: 5
-    stride: 1
-    weight_filler {
-      type: "msra"
-      variance_norm: AVERAGE
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
-layer {
-  name: "Eltwise6"
-  type: "Eltwise"
-  bottom: "concat5"
-  bottom: "conv6"
-  top: "Eltwise6"
-  eltwise_param {
-    operation: SUM
-  }
-}
-layer {
-  name: "block6"
-  type: "PReLU"
-  bottom: "Eltwise6"
-  top: "Eltwise6"
-}
-layer {
-  name: "Deconvolution2"
   type: "Deconvolution"
-  bottom: "Eltwise6"
-  top: "Deconvolution2"
+  bottom: "res3"
+  top: "depooling1"
   param {
     lr_mult: 1
     decay_mult: 1
@@ -734,101 +230,48 @@ layer {
   }
 }
 layer {
-  name: "depooling2"
-  type: "PReLU"
-  bottom: "Deconvolution2"
-  top: "Deconvolution2"
-}
-layer {
-  name: "concat6"
-  type: "Concat"
-  bottom: "Deconvolution2"
-  bottom: "Eltwise3"
-  top: "concat6"
-}
-layer {
-  name: "Convolution12"
-  type: "Convolution"
-  bottom: "concat6"
-  top: "Convolution12"
-  param {
-    lr_mult: 1
-    decay_mult: 1
-  }
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  convolution_param {
-    num_output: 128
-    pad: 2
-    kernel_size: 5
-    stride: 1
-    weight_filler {
-      type: "msra"
-      variance_norm: AVERAGE
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
-layer {
-  name: "PReLU8"
-  type: "PReLU"
-  bottom: "Convolution12"
-  top: "Convolution12"
-}
-layer {
-  name: "conv7"
-  type: "Convolution"
-  bottom: "Convolution12"
-  top: "conv7"
-  param {
-    lr_mult: 1
-    decay_mult: 1
-  }
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  convolution_param {
-    num_output: 128
-    pad: 2
-    kernel_size: 5
-    stride: 1
-    weight_filler {
-      type: "msra"
-      variance_norm: AVERAGE
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
-layer {
-  name: "Eltwise7"
+  name: "add1"
   type: "Eltwise"
-  bottom: "concat6"
-  bottom: "conv7"
-  top: "Eltwise7"
+  bottom: "depooling1"
+  bottom: "res2"
+  top: "add1"
   eltwise_param {
     operation: SUM
   }
 }
 layer {
-  name: "block7"
-  type: "PReLU"
-  bottom: "Eltwise7"
-  top: "Eltwise7"
+  name: "res4"
+  type: "Convolution"
+  bottom: "add1"
+  top: "res4"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 64
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "msra"
+      variance_norm: AVERAGE
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
 }
 layer {
-  name: "Deconvolution3"
+  name: "depooling2"
   type: "Deconvolution"
-  bottom: "Eltwise7"
-  top: "Deconvolution3"
+  bottom: "res4"
+  top: "depooling2"
   param {
     lr_mult: 1
     decay_mult: 1
@@ -853,23 +296,20 @@ layer {
   }
 }
 layer {
-  name: "depooling3"
-  type: "PReLU"
-  bottom: "Deconvolution3"
-  top: "Deconvolution3"
+  name: "add2"
+  type: "Eltwise"
+  bottom: "depooling2"
+  bottom: "res1"
+  top: "add2"
+  eltwise_param {
+    operation: SUM
+  }
 }
 layer {
-  name: "concat7"
-  type: "Concat"
-  bottom: "Deconvolution3"
-  bottom: "Eltwise2"
-  top: "concat7"
-}
-layer {
-  name: "conv8"
+  name: "res5"
   type: "Convolution"
-  bottom: "concat7"
-  top: "conv8"
+  bottom: "add2"
+  top: "res5"
   param {
     lr_mult: 1
     decay_mult: 1
@@ -879,9 +319,9 @@ layer {
     decay_mult: 0
   }
   convolution_param {
-    num_output: 64
-    pad: 2
-    kernel_size: 5
+    num_output: 32
+    pad: 1
+    kernel_size: 3
     stride: 1
     weight_filler {
       type: "msra"
@@ -894,26 +334,10 @@ layer {
   }
 }
 layer {
-  name: "Eltwise8"
-  type: "Eltwise"
-  bottom: "concat7"
-  bottom: "conv8"
-  top: "Eltwise8"
-  eltwise_param {
-    operation: SUM
-  }
-}
-layer {
-  name: "block8"
-  type: "PReLU"
-  bottom: "Eltwise8"
-  top: "Eltwise8"
-}
-layer {
-  name: "Deconvolution4"
+  name: "depooling3"
   type: "Deconvolution"
-  bottom: "Eltwise8"
-  top: "Deconvolution4"
+  bottom: "res5"
+  top: "depooling3"
   param {
     lr_mult: 1
     decay_mult: 1
@@ -938,23 +362,20 @@ layer {
   }
 }
 layer {
-  name: "depooling4"
-  type: "PReLU"
-  bottom: "Deconvolution4"
-  top: "Deconvolution4"
+  name: "add3"
+  type: "Eltwise"
+  bottom: "depooling3"
+  bottom: "conv1"
+  top: "add3"
+  eltwise_param {
+    operation: SUM
+  }
 }
 layer {
-  name: "concat8"
-  type: "Concat"
-  bottom: "Deconvolution4"
-  bottom: "Eltwise1"
-  top: "concat8"
-}
-layer {
-  name: "conv9"
+  name: "res6"
   type: "Convolution"
-  bottom: "concat8"
-  top: "conv9"
+  bottom: "add3"
+  top: "res6"
   param {
     lr_mult: 1
     decay_mult: 1
@@ -964,9 +385,9 @@ layer {
     decay_mult: 0
   }
   convolution_param {
-    num_output: 32
-    pad: 2
-    kernel_size: 5
+    num_output: 16
+    pad: 1
+    kernel_size: 3
     stride: 1
     weight_filler {
       type: "msra"
@@ -979,25 +400,9 @@ layer {
   }
 }
 layer {
-  name: "Eltwise9"
-  type: "Eltwise"
-  bottom: "concat8"
-  bottom: "conv9"
-  top: "Eltwise9"
-  eltwise_param {
-    operation: SUM
-  }
-}
-layer {
-  name: "block9"
-  type: "PReLU"
-  bottom: "Eltwise9"
-  top: "Eltwise9"
-}
-layer {
   name: "output"
   type: "Convolution"
-  bottom: "Eltwise9"
+  bottom: "res6"
   top: "output"
   param {
     lr_mult: 1
@@ -1051,7 +456,7 @@ layer {
 layer {
   name: "softmax_out"
   type: "Softmax"
-  bottom: "output"
+  bottom: "data_flat"
   top: "softmax_out"
 }
 
