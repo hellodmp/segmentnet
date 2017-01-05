@@ -77,26 +77,35 @@ class SegNet(object):
         net.pooling4 = down_conv(net.res3, chan_num)
         net.res4 = resblock(net.pooling4, chan_num)
 
-        chan_num = chan_num / 2
-        net.depooling1 = deconv(net.res4, chan_num)
-        net.add1 = add_layer(net.depooling1,net.res3)
-        net.res5 = resblock(net.add1, chan_num)
+        chan_num = chan_num * 2
+        net.pooling5 = down_conv(net.res4, chan_num)
+        net.res5 = resblock(net.pooling5, chan_num)
 
         chan_num = chan_num / 2
-        net.depooling2 = deconv(net.res5, chan_num)
-        net.add2 = add_layer(net.depooling2, net.res2)
-        net.res6 = resblock(net.add2, chan_num)
+        net.depooling4 = deconv(net.res5, chan_num)
+        net.deadd4 = add_layer(net.depooling4,net.res4)
+        net.deres4 = resblock(net.deadd4, chan_num)
 
         chan_num = chan_num / 2
-        net.depooling3 = deconv(net.res6, chan_num)
-        net.add3 = add_layer(net.depooling3, net.res1)
-        net.res7 = resblock(net.add3, chan_num)
+        net.depooling3 = deconv(net.deres4, chan_num)
+        net.deadd3 = add_layer(net.depooling3,net.res3)
+        net.deres3 = resblock(net.deadd3, chan_num)
 
         chan_num = chan_num / 2
-        net.depooling4 = deconv(net.res7, chan_num)
-        net.add4 = add_layer(net.depooling4, net.conv1)
-        net.res8 = resblock(net.add4, chan_num)
-        net.output = fcn(net.res8,2)
+        net.depooling2 = deconv(net.deres3, chan_num)
+        net.deadd2 = add_layer(net.depooling2,net.res2)
+        net.deres2 = resblock(net.deadd2, chan_num)
+
+        chan_num = chan_num / 2
+        net.depooling1 = deconv(net.deres2, chan_num)
+        net.deadd1 = add_layer(net.depooling1, net.res1)
+        net.deres1 = resblock(net.deadd1, chan_num)
+
+        chan_num = chan_num / 2
+        net.depooling0 = deconv(net.deres1, chan_num)
+        net.deadd0 = add_layer(net.depooling0, net.conv1)
+        net.deres0 = resblock(net.deadd0, chan_num)
+        net.output = fcn(net.deres0,2)
         #train
         if phase=="TRAIN":
             net.data_flat = L.Reshape(net.output, shape=dict(dim=[0,2,1048576]))
@@ -110,6 +119,6 @@ class SegNet(object):
 
 if __name__ == "__main__":
     net = SegNet()
-    chan_num = 32
+    chan_num = 64
     netstr = net.layers_proto(2,"TRAIN", chan_num)
     print netstr
