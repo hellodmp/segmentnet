@@ -57,16 +57,30 @@ def contours2mask(contours_dict, imageData):
         mask_dict[key] = mask
     return mask_dict
 
-def get_mask_dict(path):
-    structure_file = [f for f in listdir(path) if isfile(join(path, f)) and f.startswith('RS')]
-    ct_list = [f for f in listdir(path) if isfile(join(path, f)) and f.startswith('CT')]
+def get_mask_dict(path,structure_names):
+    structure_file = [path+f for f in listdir(path) if isfile(join(path, f)) and f.startswith('RS')]
+    ct_list = [path+f for f in listdir(path) if isfile(join(path, f)) and f.startswith('CT')]
+    z_list = []
+    for path in ct_list:
+        imageData = get_imageData(path)
+        z_list.append(imageData["position"][2])
+    z_list.sort()
 
-
+    mask_list = []
+    for structure_name in structure_names:
+        contours = get_contours(structure_file[0], structure_name)
+        if len(contours) > 0:
+            new_contours = contours_convert(contours, imageData)
+            mask = contours2mask(new_contours, imageData)
+            mask_list.append(mask)
+    return z_list,mask_list
 
 
 if __name__ == '__main__':
-    contours = get_contours("./Dataset/V13265/RS.1.2.246.352.71.4.126422491061.161810.20151221162725.dcm","PTV")
-    imageData = get_imageData("./Dataset/V13265/CT.1.3.12.2.1107.5.1.4.49611.30000014060506014781200000199.dcm")
-    newContours = contours_convert(contours,imageData)
-    mask_dict = contours2mask(newContours,imageData)
-    print mask_dict
+    z_list, mask_list = get_mask_dict("./Dataset/V13265/", ["PTV","Bladder","FemoralHead"])
+    print z_list, mask_list
+    for mask_dict in mask_list:
+        for key in mask_dict.keys():
+            mask = mask_dict[key]
+            print key, np.mean(mask)
+        print "\n"
