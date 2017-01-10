@@ -60,7 +60,7 @@ def contours2mask(contours_dict, imageData):
 def get_mask_dict(path):
     structure_file = [f for f in listdir(path) if isfile(join(path, f)) and f.startswith('RS')]
     ct_list = [f for f in listdir(path) if isfile(join(path, f)) and f.startswith('CT')]
-    
+
 
 
 
