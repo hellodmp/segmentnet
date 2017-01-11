@@ -87,6 +87,8 @@ class DataManager(object):
             ret[key] = np.zeros([self.params['VolSize'][0], self.params['VolSize'][1], self.params['VolSize'][2]], dtype=np.float32)
 
             img=dat[key]
+            print "image_spacing=",img.GetSpacing()
+            print "image_size=", img.GetSize()
 
             #we rotate the image according to its transformation using the direction and according to the final spacing we want
             factor = np.asarray(img.GetSpacing()) / [self.params['dstRes'][0], self.params['dstRes'][1],

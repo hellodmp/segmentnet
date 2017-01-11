@@ -46,7 +46,6 @@ howManyImages = len(dataManagerTrain.sitkImages)
 howManyGT = len(dataManagerTrain.sitkGT)
 
 for key in numpyImages:
-    print numpyImages[key]
     #print numpyImages[key][numpyImages[key] > 0]
     mean = np.mean(numpyImages[key][numpyImages[key] > 0])
     std = np.std(numpyImages[key][numpyImages[key] > 0])
@@ -60,7 +59,4 @@ assert howManyGT == howManyImages
 
 print "The dataset has shape: data - " + str(howManyImages) + ". labels - " + str(howManyGT)
 
-print numpyImages['Case26.mhd'].shape
-print numpyGT['Case26_segmentation.mhd'].shape
-print "hellodmp"
 

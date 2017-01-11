@@ -206,4 +206,8 @@ class DataManager(object):
         writer.SetFileName(join(self.resultsDir, filename + '_result' + ext))
         writer.Execute(toWrite)
 
-
+if __name__ == "__main__":
+    path = "../Dataset/V13265/"
+    ct_list = [path + f for f in listdir(path) if isfile(join(path, f)) and f.startswith('CT')]
+    image = read_image(ct_list[0])
+    sitk_show(image)
