@@ -41,42 +41,38 @@ def dict2vol(imageDict):
     list = sorted(imageDict.iteritems(), key=lambda d: d[0])
     (d, w, h) = list[0][1].shape
     data = np.zeros((len(list), w, h))
+    for i in range(len(list)):
+        data[i,:,:] = list[i][1]
     image = sitk.GetImageFromArray(data)
     return image
 
-def getNumpyData(self, dat, method, volSize, dstRes):
-    ret = dict()
-    for key in dat:
-        ret[key] = np.zeros([volSize[0], volSize[1], volSize[2]],
-                            dtype=np.float32)
-        img = dat[key]
+def convertNumpyData(img, volSize, dstRes, method=sitk.sitkLinear):
+    # we rotate the image according to its transformation using the direction and according to the final spacing we want
+    factor = np.asarray(img.GetSpacing()) / [dstRes[0], dstRes[1], dstRes[2]]
+    factorSize = np.asarray(img.GetSize() * factor, dtype=float)
+    newSize = np.max([factorSize, volSize], axis=0)
+    newSize = newSize.astype(dtype=int)
 
-        # we rotate the image according to its transformation using the direction and according to the final spacing we want
-        factor = np.asarray(img.GetSpacing()) / [dstRes[0], dstRes[1], dstRes[2]]
-        factorSize = np.asarray(img.GetSize() * factor, dtype=float)
-        newSize = np.max([factorSize, volSize], axis=0)
-        newSize = newSize.astype(dtype=int)
+    T = sitk.AffineTransform(3)
+    T.SetMatrix(img.GetDirection())
+    resampler = sitk.ResampleImageFilter()
+    resampler.SetReferenceImage(img)
+    resampler.SetOutputSpacing([dstRes[0], dstRes[1], dstRes[2]])
+    resampler.SetSize(newSize)
+    resampler.SetInterpolator(method)
+    '''
+    if params['normDir']:
+        resampler.SetTransform(T.GetInverse())
+    '''
+    imgResampled = resampler.Execute(img)
+    imgCentroid = np.asarray(newSize, dtype=float) / 2.0
+    imgStartPx = (imgCentroid - volSize / 2.0).astype(dtype=int)
+    regionExtractor = sitk.RegionOfInterestImageFilter()
+    regionExtractor.SetSize(list(volSize.astype(dtype=int)))
+    regionExtractor.SetIndex(list(imgStartPx))
+    imgResampledCropped = regionExtractor.Execute(imgResampled)
 
-        T = sitk.AffineTransform(3)
-        T.SetMatrix(img.GetDirection())
-        resampler = sitk.ResampleImageFilter()
-        resampler.SetReferenceImage(img)
-        resampler.SetOutputSpacing([dstRes[0], dstRes[1], dstRes[2]])
-        resampler.SetSize(newSize)
-        resampler.SetInterpolator(method)
-        if self.params['normDir']:
-            resampler.SetTransform(T.GetInverse())
-
-        imgResampled = resampler.Execute(img)
-        imgCentroid = np.asarray(newSize, dtype=float) / 2.0
-        imgStartPx = (imgCentroid - volSize / 2.0).astype(dtype=int)
-        regionExtractor = sitk.RegionOfInterestImageFilter()
-        regionExtractor.SetSize(list(volSize.astype(dtype=int)))
-        regionExtractor.SetIndex(list(imgStartPx))
-        imgResampledCropped = regionExtractor.Execute(imgResampled)
-
-        ret[key] = np.transpose(sitk.GetArrayFromImage(imgResampledCropped).astype(dtype=float), [2, 1, 0])
-
+    ret = np.transpose(sitk.GetArrayFromImage(imgResampledCropped).astype(dtype=float), [2, 1, 0])
     return ret
 
 
@@ -98,4 +94,7 @@ if __name__ == "__main__":
     ct_list = [path + f for f in listdir(path) if isfile(join(path, f)) and f.startswith('CT')]
     images = read_images(ct_list)
     image = dict2vol(images)
-    print image
+    volSize = np.asarray([128,128,64],dtype=int)
+    dstRes = np.asarray([1,1,5],dtype=float)
+    data = convertNumpyData(image,volSize,dstRes)
+    print data.shape
