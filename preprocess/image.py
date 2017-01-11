@@ -25,16 +25,18 @@ def loadImages(fileList):
 
     meanIntensityTrain = m / len(sitkImages)
 
-def read_dcm(path):
+def read_image(path):
     #read dicom
     data = sitk.ReadImage(path)
+
     #Rescale the vlaue into [0,255]
-    filter = sitk.RescaleIntensityImageFilter()
-    dcm = filter.Execute(data,0,255)
+    #filter = SimpleITK.RescaleIntensityImageFilter()
+    #dcm = filter.Execute(data,0,255)
     # tansform to numpy
-    nda = sitk.GetArrayFromImage(dcm)
+    nda = sitk.GetArrayFromImage(data)
     (w, h, d)=nda.shape
     image = nda.reshape((w, h, d)).transpose(1, 2, 0)
+    #image = image[:,:,0]
     return image
 
 def show(image):
@@ -54,11 +56,12 @@ def sitk_show(nda, title=None, margin=0.0, dpi=40):
         ax.imshow(np.squeeze(nda[:, :, k]), extent=extent, interpolation=None)
         plt.draw()
         plt.pause(0.1)
-        #plt.waitforbuttonpress()
+        plt.waitforbuttonpress()
 
 if __name__ == "__main__":
     path = "../Dataset/V13265/"
     ct_list = [path + f for f in listdir(path) if isfile(join(path, f)) and f.startswith('CT')]
-    #loadImages(ct_list)
-    image = read_dcm(ct_list[0])
-    show(image)
+    for i in range(len(ct_list)):
+        image = read_image(ct_list[i])
+        #show(image)
+        sitk_show(image)
