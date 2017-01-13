@@ -11,6 +11,7 @@ from preprocess import dicomparser
 
 def get_imageData(ct_file):
     ct = dicomparser.DicomParser(filename=ct_file)
+    print ct.GetSeriesInfo()
     imageData = ct.GetImageData()
     return imageData
 
@@ -24,6 +25,15 @@ def read_images(fileList):
         image = rescalFilt.Execute(sitk.Cast(sitk.ReadImage(path), sitk.sitkFloat32))
         image_dict[info["position"][2]] = sitk.GetArrayFromImage(image)
     return image_dict
+
+def read_series(dir):
+    reader = sitk.ImageSeriesReader()
+    dicom_names = reader.GetGDCMSeriesFileNames(dir,"1.3.12.2.1107.5.1.4.49611.30000014060506014781200000198")
+    reader.SetFileNames(dicom_names)
+    image = reader.Execute()
+    size = image.GetSize()
+    print( "Image size:", size[0], size[1], size[2] )
+    #sitk.Show( image, "Dicom Series" )
 
 
 def read_image(path):
@@ -90,7 +100,14 @@ def sitk_show(nda, title=None, margin=0.0, dpi=40):
         plt.waitforbuttonpress()
 
 if __name__ == "__main__":
-    path = "../Dataset/V13265/"
+    path = "../Dataset/V13265"
+    ct_list = [path +"/"+ f for f in listdir(path) if isfile(join(path, f)) and f.startswith('CT')]
+    '''
+    for file in ct_list:
+        get_imageData(file)
+    '''
+    read_series(path)
+    '''
     ct_list = [path + f for f in listdir(path) if isfile(join(path, f)) and f.startswith('CT')]
     images = read_images(ct_list)
     image = dict2vol(images)
@@ -98,3 +115,4 @@ if __name__ == "__main__":
     dstRes = np.asarray([1,1,5],dtype=float)
     data = convertNumpyData(image,volSize,dstRes)
     print data.shape
+    '''
