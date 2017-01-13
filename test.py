@@ -1,7 +1,7 @@
 import numpy as np
 import os
 
-import DataManager as DM
+import DataManagerold as DM
 
 basePath=os.getcwd()
 
@@ -16,6 +16,7 @@ params['ModelParams']['device']=0
 params['ModelParams']['prototxtTrain']=os.path.join(basePath,'Prototxt/train_noPooling_ResNet_cinque.prototxt')
 params['ModelParams']['prototxtTest']=os.path.join(basePath,'Prototxt/test_noPooling_ResNet_cinque.prototxt')
 params['ModelParams']['snapshot']=0
+#params['ModelParams']['dirTrain']=os.path.join(basePath,'Dataset/data')
 params['ModelParams']['dirTrain']=os.path.join(basePath,'Dataset/Train1')
 params['ModelParams']['dirTest']=os.path.join(basePath,'Dataset/Test')
 params['ModelParams']['dirResult']=os.path.join(basePath,'Results') #where we need to save the results (relative to the base path)

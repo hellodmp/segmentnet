@@ -1,7 +1,7 @@
 import numpy as np
 import SimpleITK as sitk
 from os import listdir
-from os.path import isfile, isdir, join, splitext
+from os.path import isfile, join, splitext
 
 class DataManager(object):
     params=None
@@ -21,7 +21,7 @@ class DataManager(object):
         self.resultsDir=resultsDir
 
     def createImageFileList(self):
-        self.fileList = [f for f in listdir(self.srcFolder) if isdir(join(self.srcFolder, f))]
+        self.fileList = [f for f in listdir(self.srcFolder) if isfile(join(self.srcFolder, f)) and 'segmentation' not in f and 'raw' not in f]
         print 'FILE LIST: ' + str(self.fileList)
 
 
@@ -33,25 +33,19 @@ class DataManager(object):
 
 
     def loadImages(self):
-        self.sitkImages = dict()
-        rescalFilt = sitk.RescaleIntensityImageFilter()
+        self.sitkImages=dict()
+        rescalFilt=sitk.RescaleIntensityImageFilter()
         rescalFilt.SetOutputMaximum(1)
         rescalFilt.SetOutputMinimum(0)
+
         stats = sitk.StatisticsImageFilter()
-        reader = sitk.ImageSeriesReader()
-        m = 0.0
-        for dir in self.fileList:
-            dir = join(self.srcFolder, dir)
-            series_list = reader.GetGDCMSeriesIDs(dir)
-            for series_id in series_list:
-                dicom_names = reader.GetGDCMSeriesFileNames(dir, series_id)
-                if len(dicom_names) > 1:
-                    break
-            reader.SetFileNames(dicom_names)
-            self.sitkImages[dir] = rescalFilt.Execute(sitk.Cast(reader.Execute(),sitk.sitkFloat32))
-            stats.Execute(self.sitkImages[dir])
+        m = 0.
+        for f in self.fileList:
+            self.sitkImages[f]=rescalFilt.Execute(sitk.Cast(sitk.ReadImage(join(self.srcFolder, f)),sitk.sitkFloat32))
+            stats.Execute(self.sitkImages[f])
             m += stats.GetMean()
-        self.meanIntensityTrain = m / len(self.sitkImages)
+
+        self.meanIntensityTrain=m/len(self.sitkImages)
 
 
     def loadGT(self):
@@ -64,9 +58,9 @@ class DataManager(object):
 
     def loadTrainingData(self):
         self.createImageFileList()
+        self.createGTFileList()
         self.loadImages()
-        #self.createGTFileList()
-        #self.loadGT()
+        self.loadGT()
 
 
     def loadTestData(self):

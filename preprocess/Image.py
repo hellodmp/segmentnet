@@ -28,12 +28,14 @@ def read_images(fileList):
 
 def read_series(dir):
     reader = sitk.ImageSeriesReader()
-    dicom_names = reader.GetGDCMSeriesFileNames(dir,"1.3.12.2.1107.5.1.4.49611.30000014060506014781200000198")
+    series_list =  reader.GetGDCMSeriesIDs(dir)
+    for series_id in series_list:
+        dicom_names = reader.GetGDCMSeriesFileNames(dir, series_id)
+        if len(dicom_names) > 1:
+            break
     reader.SetFileNames(dicom_names)
     image = reader.Execute()
-    size = image.GetSize()
-    print( "Image size:", size[0], size[1], size[2] )
-    #sitk.Show( image, "Dicom Series" )
+    return image
 
 
 def read_image(path):
