@@ -8,6 +8,8 @@ from skimage import io
 from skimage import data
 from preprocess import dicomparser
 
+#http://insightsoftwareconsortium.github.io/SimpleITK-Notebooks/03_Image_Details.html
+
 
 def get_imageData(ct_file):
     ct = dicomparser.DicomParser(filename=ct_file)

@@ -1,5 +1,6 @@
 import numpy as np
 import SimpleITK as sitk
+from LabelManager import LabelManager
 from os import listdir
 from os.path import isfile, isdir, join, splitext
 
@@ -15,7 +16,7 @@ class DataManager(object):
     sitkGT=None
     meanIntensityTrain = None
 
-    def __init__(self,srcFolder,resultsDir,parameters):
+    def __init__(self, srcFolder, resultsDir, parameters):
         self.params=parameters
         self.srcFolder=srcFolder
         self.resultsDir=resultsDir
@@ -23,13 +24,6 @@ class DataManager(object):
     def createImageFileList(self):
         self.fileList = [f for f in listdir(self.srcFolder) if isdir(join(self.srcFolder, f))]
         print 'FILE LIST: ' + str(self.fileList)
-
-
-    def createGTFileList(self):
-        self.gtList=list()
-        for f in self.fileList:
-            filename, ext = splitext(f)
-            self.gtList.append(join(filename + '_segmentation' + ext))
 
 
     def loadImages(self):
@@ -54,20 +48,17 @@ class DataManager(object):
         self.meanIntensityTrain = m / len(self.sitkImages)
 
 
-    def loadGT(self):
-        self.sitkGT=dict()
-
-        for f in self.gtList:
-            self.sitkGT[f]=sitk.Cast(sitk.ReadImage(join(self.srcFolder, f))>0.5,sitk.sitkFloat32)
-
-
-
     def loadTrainingData(self):
         self.createImageFileList()
         self.loadImages()
+        #load labels
+        key = self.sitkImages.keys()[0]
+        spacing = self.sitkImages[key].GetSpacing()
+        manager = LabelManager(self.srcFolder, spacing)
+        manager.createLabelFileList()
+        self.sitkGT = manager.load_labels()
         #self.createGTFileList()
         #self.loadGT()
-
 
     def loadTestData(self):
         self.createImageFileList()
@@ -106,24 +97,19 @@ class DataManager(object):
 
             newSize = newSize.astype(dtype=int)
 
-            T=sitk.AffineTransform(3)
-            T.SetMatrix(img.GetDirection())
-
             resampler = sitk.ResampleImageFilter()
             resampler.SetReferenceImage(img)
             resampler.SetOutputSpacing([self.params['dstRes'][0], self.params['dstRes'][1], self.params['dstRes'][2]])
             resampler.SetSize(newSize)
             resampler.SetInterpolator(method)
             if self.params['normDir']:
+                T=sitk.AffineTransform(3)
+                T.SetMatrix(img.GetDirection())
                 resampler.SetTransform(T.GetInverse())
 
             imgResampled = resampler.Execute(img)
-
-
             imgCentroid = np.asarray(newSize, dtype=float) / 2.0
-
             imgStartPx = (imgCentroid - self.params['VolSize'] / 2.0).astype(dtype=int)
-
             regionExtractor = sitk.RegionOfInterestImageFilter()
             regionExtractor.SetSize(list(self.params['VolSize'].astype(dtype=int)))
             regionExtractor.SetIndex(list(imgStartPx))

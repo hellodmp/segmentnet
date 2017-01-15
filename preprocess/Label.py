@@ -78,6 +78,7 @@ def get_mask_dict(path,structure_names):
     return z_list,mask_list
 
 
+
 if __name__ == '__main__':
     z_list, mask_list = get_mask_dict("./Dataset/V13265/", ["PTV","Bladder","FemoralHead"])
     print z_list, mask_list
