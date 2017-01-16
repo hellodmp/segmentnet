@@ -17,6 +17,7 @@ class VNet(object):
         self.params=params
         caffe.set_device(self.params['ModelParams']['device'])
         caffe.set_mode_gpu()
+        #caffe.set_mode_cpu()
 
     def prepareDataThread(self, dataQueue, numpyImages, numpyGT):
 
@@ -31,10 +32,10 @@ class VNet(object):
         whichDataForMatchingList = np.random.randint(len(keysIMG), size=int(nr_iter_dataAug/self.params['ModelParams']['nProc']))
 
         for whichData,whichDataForMatching in zip(whichDataList,whichDataForMatchingList):
-            filename, ext = splitext(keysIMG[whichData])
+            filename = keysIMG[whichData]
 
-            currGtKey = filename + '_segmentation' + ext
-            currImgKey = filename + ext
+            currGtKey = filename
+            currImgKey = filename
 
             # data agugumentation through hist matching across different examples...
             ImgKeyMatching = keysIMG[whichDataForMatching]
@@ -129,6 +130,7 @@ class VNet(object):
             #f.write("test_interval: " + str(test_interval) + "\n")
 
         f.close()
+
         solver = caffe.SGDSolver("solver.prototxt")
         os.remove("solver.prototxt")
 
@@ -148,6 +150,10 @@ class VNet(object):
             mean = np.mean(numpyImages[key][numpyImages[key]>0])
             std = np.std(numpyImages[key][numpyImages[key]>0])
 
+            print numpyImages[key].shape
+            print numpyGT[key].shape
+            #utilities.sitk_show(numpyGT[key])
+
             numpyImages[key]-=mean
             numpyImages[key]/=std
 
@@ -162,7 +168,7 @@ class VNet(object):
 
         self.trainThread(dataQueue, solver)
 
-
+    '''
     def test(self):
         self.dataManagerTest = DM.DataManager(self.params['ModelParams']['dirTest'], self.params['ModelParams']['dirResult'], self.params['DataManagerParams'])
         self.dataManagerTest.loadTestData()
@@ -195,4 +201,5 @@ class VNet(object):
             results[key] = np.squeeze(labelmap)
 
             self.dataManagerTest.writeResultsFromNumpyLabel(np.squeeze(labelmap),key)
+    '''
 
