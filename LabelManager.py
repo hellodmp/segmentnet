@@ -100,7 +100,7 @@ class LabelManager(object):
         print 'FILE LIST: ' + str(self.fileList)
 
 
-    def load_labels(self, structure_names=["Bladder"]):
+    def load_labels(self, structure_names=["Urinary Bladder"]):
         sitkLabels = {}
         for path in self.fileList:
             z_list, image_data = self.get_z_list(path)
@@ -118,11 +118,35 @@ class LabelManager(object):
             sitkLabels[path].SetSpacing(self.spacing)
         return sitkLabels
 
+    def check_structure(self, structure_name="Urinary Bladder"):
+        index = 0
+        self.createLabelFileList()
+        for path in self.fileList:
+            structure_file = [path+"/"+f for f in listdir(path) if isfile(join(path, f)) and f.startswith('RS')]
+            rtss = dicomparser.DicomParser(filename=structure_file[0])
+            structures = rtss.GetStructures()
+            flag = False
+            for i, structure in structures.iteritems():
+                if structure['name'] == structure_name:
+                    flag = True
+            if flag:
+                print index, structure_name
+            else:
+                print index,"None"
+            index = index + 1
+
+
 if __name__ == '__main__':
-    manager = LabelManager("./Dataset/data/", np.array([2.0, 2.0, 5.0]))
+    manager = LabelManager("./Dataset/data1", np.array([2.0, 2.0, 5.0]))
+    manager.check_structure()
+
+
+'''
+if __name__ == '__main__':
+    manager = LabelManager("./Dataset/data", np.array([2.0, 2.0, 5.0]))
     manager.createLabelFileList()
     manager.load_labels()
-
+'''
 
 '''
 if __name__ == '__main__':

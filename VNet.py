@@ -15,9 +15,9 @@ class VNet(object):
 
     def __init__(self,params):
         self.params=params
-        caffe.set_device(self.params['ModelParams']['device'])
-        caffe.set_mode_gpu()
-        #caffe.set_mode_cpu()
+        #caffe.set_device(self.params['ModelParams']['device'])
+        #caffe.set_mode_gpu()
+        caffe.set_mode_cpu()
 
     def prepareDataThread(self, dataQueue, numpyImages, numpyGT):
 
