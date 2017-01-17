@@ -78,7 +78,7 @@ class DataManager(object):
         return dat
 
 
-    def getNumpyData(self,dat,method):
+    def getNumpyData(self,dat,method,reshape_array=[1, 2, 0]):
         ret=dict()
         for key in dat:
             ret[key] = np.zeros([self.params['VolSize'][0], self.params['VolSize'][1], self.params['VolSize'][2]], dtype=np.float32)
@@ -116,8 +116,8 @@ class DataManager(object):
 
             imgResampledCropped = regionExtractor.Execute(imgResampled)
 
-            ret[key] = np.transpose(sitk.GetArrayFromImage(imgResampledCropped).astype(dtype=float), [2, 1, 0])
-
+            #ret[key] = np.transpose(sitk.GetArrayFromImage(imgResampledCropped).astype(dtype=float), [2, 1, 0])
+            ret[key] = np.transpose(sitk.GetArrayFromImage(imgResampledCropped).astype(dtype=float), reshape_array)
         return ret
 
 

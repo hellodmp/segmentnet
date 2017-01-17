@@ -53,9 +53,10 @@ for key in numpyImages:
     #print numpyImages[key][numpyImages[key] > 0]
     print numpyImages[key].shape
     print numpyGT[key].shape
-    sitk_show(numpyImages[key])
-    sitk_show(numpyGT[key])
-    #sitk_show(numpyImages[key])
+    image = numpyImages[key]
+    sitk_show(image)
+    image[numpyGT[key]==1]=1.0
+    sitk_show(image)
     mean = np.mean(numpyImages[key][numpyImages[key] > 0])
     std = np.std(numpyImages[key][numpyImages[key] > 0])
     #print mean, std

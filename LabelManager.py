@@ -99,7 +99,7 @@ class LabelManager(object):
         self.fileList = [self.srcFolder+"/"+f for f in listdir(self.srcFolder) if isdir(join(self.srcFolder, f))]
         print 'FILE LIST: ' + str(self.fileList)
 
-
+    #attention rtstructure is not same with image
     def load_labels(self, structure_names=["Urinary Bladder"]):
         sitkLabels = {}
         for path in self.fileList:
@@ -111,7 +111,7 @@ class LabelManager(object):
             for i in range(len(z_list)):
                 key = str(z_list[i])+'0'
                 if key in mask_dict.keys():
-                    data[i,:,:] = mask_dict[key]
+                    data[i,:,:] = mask_dict[key].transpose()
                 else:
                     data[i,:,:] = np.zeros((w, h))
             sitkLabels[path] = sitk.GetImageFromArray(data)
