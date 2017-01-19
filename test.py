@@ -36,10 +36,16 @@ params['DataManagerParams']['normDir'] = False #if rotates the volume according 
 
 print params['ModelParams']['dirTrain']
 
+'''
 #we define here a data manage object
 dataManagerTrain = DM.DataManager(params['ModelParams']['dirTrain'],
                                   params['ModelParams']['dirResult'],
                                   params['DataManagerParams'])
+'''
+dataManagerTrain = DM.DataManager(params['ModelParams']['dirTest'],
+                                      params['ModelParams']['dirResult'],
+                                      params['DataManagerParams'])
+
 
 #dataManagerTrain.loadTrainingData() #loads in sitk format
 dataManagerTrain.loadTrainingData()
@@ -54,7 +60,6 @@ for key in numpyImages:
     print numpyImages[key].shape
     print numpyGT[key].shape
     image = numpyImages[key]
-    sitk_show(image)
     image[numpyGT[key]==1]=1.0
     sitk_show(image)
     mean = np.mean(numpyImages[key][numpyImages[key] > 0])

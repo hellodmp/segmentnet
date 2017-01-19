@@ -19,6 +19,7 @@ class VNet(object):
         caffe.set_mode_gpu()
         #caffe.set_mode_cpu()
 
+
     def prepareDataThread(self, dataQueue, numpyImages, numpyGT):
 
         nr_iter = self.params['ModelParams']['numIterations']
@@ -55,6 +56,29 @@ class VNet(object):
             weightData[defLab == 0] = np.prod(defLab.shape) / np.sum((defLab == 0).astype(dtype=np.float32))
 
             dataQueue.put(tuple((defImg,defLab, weightData)))
+
+    '''
+    def prepareDataThread(self, dataQueue, numpyImages, numpyGT):
+
+        nr_iter = self.params['ModelParams']['numIterations']
+        batchsize = self.params['ModelParams']['batchsize']
+
+        keysIMG = numpyImages.keys()
+
+        nr_iter_dataAug = nr_iter*batchsize
+        np.random.seed()
+        whichDataList = np.random.randint(len(keysIMG), size=int(nr_iter_dataAug/self.params['ModelParams']['nProc']))
+
+        for whichData in whichDataList:
+            filename = keysIMG[whichData]
+            currGtKey = filename
+            currImgKey = filename
+
+            defImg = numpyImages[currImgKey]
+            defLab = numpyGT[currGtKey]
+            weightData = np.zeros_like(defLab, dtype=float)
+            dataQueue.put(tuple((defImg,defLab, weightData)))
+    '''
 
     def trainThread(self,dataQueue,solver):
 
@@ -123,8 +147,9 @@ class VNet(object):
             f.write("lr_policy: \"step\" \n")
             f.write("stepsize: 20000 \n")
             f.write("gamma: 0.1 \n")
+            f.write("clip_gradients: 35 \n")
             f.write("display: 1 \n")
-            f.write("snapshot: 500 \n")
+            f.write("snapshot: 2000 \n")
             f.write("snapshot_prefix: \"" + self.params['ModelParams']['dirSnapshots'] + "\" \n")
             #f.write("test_iter: 3 \n")
             #f.write("test_interval: " + str(test_interval) + "\n")
@@ -168,7 +193,7 @@ class VNet(object):
 
         self.trainThread(dataQueue, solver)
 
-    '''
+
     def test(self):
         self.dataManagerTest = DM.DataManager(self.params['ModelParams']['dirTest'], self.params['ModelParams']['dirResult'], self.params['DataManagerParams'])
         self.dataManagerTest.loadTestData()
@@ -178,6 +203,7 @@ class VNet(object):
                         caffe.TEST)
 
         numpyImages = self.dataManagerTest.getNumpyImages()
+        numpyImages_back = self.dataManagerTest.getNumpyImages()
 
         for key in numpyImages:
             mean = np.mean(numpyImages[key][numpyImages[key]>0])
@@ -198,8 +224,18 @@ class VNet(object):
             l = out["labelmap"]
             labelmap = np.squeeze(l[0,1,:,:,:])
 
-            results[key] = np.squeeze(labelmap)
+            #results[key] = np.squeeze(labelmap)
 
-            self.dataManagerTest.writeResultsFromNumpyLabel(np.squeeze(labelmap),key)
-    '''
+            #image = numpyImages_back[key]
+            #image[results[key] > 0.5] = 1.0
+            #utilities.sitk_show(image)
+
+            image = numpyImages_back[key]
+            result = np.squeeze(labelmap)
+            #utilities.sitk_show(image)
+            image[result>=0.5]=1
+            utilities.sitk_show(image)
+
+            #self.dataManagerTest.writeResultsFromNumpyLabel(np.squeeze(labelmap),key)
+
 

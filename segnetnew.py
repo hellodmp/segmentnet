@@ -117,8 +117,19 @@ class SegNet(object):
             net.labelmap = L.Reshape(net.softmax_out, shape=dict(dim=[1,2,128,128,64]))
         return net.to_proto()
 
+    def input_train(self):
+        print "input: \"data\""
+        print "input_shape {dim: 2 dim: 1 dim: 128 dim: 128 dim: 64}"
+        print "input: \"label\""
+        print "input_shape{dim: 2 dim: 1 dim: 128 dim: 128 dim: 64}"
+
+    def input_test(self):
+        print "input: \"data\""
+        print "input_shape {dim: 2 dim: 1 dim: 128 dim: 128 dim: 64}"
+
+
 if __name__ == "__main__":
     net = SegNet()
-    chan_num = 64
+    chan_num = 32
     netstr = net.layers_proto(2,"TRAIN", chan_num)
     print netstr

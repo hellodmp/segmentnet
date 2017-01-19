@@ -56,7 +56,7 @@ def sitk_show(nda, title=None, margin=0.0, dpi=40):
         print "printing slice " + str(k)
         ax.imshow(np.squeeze(nda[:, :, k]),cmap ='gray', extent=extent, interpolation=None)
         plt.draw()
-        #plt.pause(1)
+        #plt.pause(0.1)
         plt.waitforbuttonpress()
 
 def computeQualityMeasures(lP,lT):

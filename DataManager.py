@@ -84,8 +84,8 @@ class DataManager(object):
             ret[key] = np.zeros([self.params['VolSize'][0], self.params['VolSize'][1], self.params['VolSize'][2]], dtype=np.float32)
 
             img=dat[key]
-            print "image_spacing=",img.GetSpacing()
-            print "image_size=", img.GetSize()
+            #print "image_spacing=",img.GetSpacing()
+            #print "image_size=", img.GetSize()
 
             #we rotate the image according to its transformation using the direction and according to the final spacing we want
             factor = np.asarray(img.GetSpacing()) / [self.params['dstRes'][0], self.params['dstRes'][1],
@@ -117,7 +117,7 @@ class DataManager(object):
             imgResampledCropped = regionExtractor.Execute(imgResampled)
 
             #ret[key] = np.transpose(sitk.GetArrayFromImage(imgResampledCropped).astype(dtype=float), [2, 1, 0])
-            ret[key] = np.transpose(sitk.GetArrayFromImage(imgResampledCropped).astype(dtype=float), reshape_array)
+            ret[key] = np.transpose(sitk.GetArrayFromImage(imgResampledCropped).astype(dtype=float), [1, 2, 0])
         return ret
 
 
@@ -143,6 +143,8 @@ class DataManager(object):
         resampler.SetOutputSpacing([self.params['dstRes'][0], self.params['dstRes'][1], self.params['dstRes'][2]])
         resampler.SetSize(newSize)
         resampler.SetInterpolator(sitk.sitkNearestNeighbor)
+
+        print "start transfrom"
 
         if self.params['normDir']:
             resampler.SetTransform(T.GetInverse())
@@ -195,9 +197,12 @@ class DataManager(object):
         toWrite = sitk.Cast(toWrite,sitk.sitkUInt8)
 
         writer = sitk.ImageFileWriter()
-        filename, ext = splitext(key)
+        #filename, ext = splitext(key)
         #print join(self.resultsDir, filename + '_result' + ext)
-        writer.SetFileName(join(self.resultsDir, filename + '_result' + ext))
+        #writer.SetFileName(join(self.resultsDir, filename + '_result' + ext))
+        filename = key+".raw"
+        print filename
+        writer.SetFileName(filename)
         writer.Execute(toWrite)
 
 
