@@ -18,7 +18,7 @@ params['ModelParams']['device']=1
 #params['ModelParams']['prototxtTest']=os.path.join(basePath,'Prototxt/test.prototxt')
 params['ModelParams']['prototxtTrain']=os.path.join(basePath,'Prototxt/train_noPooling_ResNet_cinque.prototxt')
 params['ModelParams']['prototxtTest']=os.path.join(basePath,'Prototxt/test_noPooling_ResNet_cinque.prototxt')
-params['ModelParams']['snapshot']=0
+params['ModelParams']['snapshot']=4000
 #params['ModelParams']['snapshot']=26000
 params['ModelParams']['dirTrain']=os.path.join(basePath,'Dataset/data')
 params['ModelParams']['dirTest']=os.path.join(basePath,'Dataset/Test')
@@ -38,7 +38,7 @@ params['DataManagerParams']['normDir'] = False #if rotates the volume according 
 
 
 model=VN.VNet(params)
-model.train()
+model.test()
 
 
 '''

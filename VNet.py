@@ -19,66 +19,29 @@ class VNet(object):
         caffe.set_mode_gpu()
         #caffe.set_mode_cpu()
 
-
     def prepareDataThread(self, dataQueue, numpyImages, numpyGT):
-
         nr_iter = self.params['ModelParams']['numIterations']
         batchsize = self.params['ModelParams']['batchsize']
-
         keysIMG = numpyImages.keys()
 
-        nr_iter_dataAug = nr_iter*batchsize
+        nr_iter_dataAug = nr_iter * batchsize
         np.random.seed()
-        whichDataList = np.random.randint(len(keysIMG), size=int(nr_iter_dataAug/self.params['ModelParams']['nProc']))
-        whichDataForMatchingList = np.random.randint(len(keysIMG), size=int(nr_iter_dataAug/self.params['ModelParams']['nProc']))
-
-        for whichData,whichDataForMatching in zip(whichDataList,whichDataForMatchingList):
-            filename = keysIMG[whichData]
-
-            currGtKey = filename
-            currImgKey = filename
-
-            # data agugumentation through hist matching across different examples...
-            ImgKeyMatching = keysIMG[whichDataForMatching]
-
-            defImg = numpyImages[currImgKey]
-            defLab = numpyGT[currGtKey]
-
-            defImg = utilities.hist_match(defImg, numpyImages[ImgKeyMatching])
-
-            if(np.random.rand(1)[0]>0.5): #do not apply deformations always, just sometimes
-                defImg, defLab = utilities.produceRandomlyDeformedImage(defImg, defLab,
-                                    self.params['ModelParams']['numcontrolpoints'],
-                                               self.params['ModelParams']['sigma'])
-
-            weightData = np.zeros_like(defLab,dtype=float)
-            weightData[defLab == 1] = np.prod(defLab.shape) / np.sum((defLab==1).astype(dtype=np.float32))
-            weightData[defLab == 0] = np.prod(defLab.shape) / np.sum((defLab == 0).astype(dtype=np.float32))
-
-            dataQueue.put(tuple((defImg,defLab, weightData)))
-
-    '''
-    def prepareDataThread(self, dataQueue, numpyImages, numpyGT):
-
-        nr_iter = self.params['ModelParams']['numIterations']
-        batchsize = self.params['ModelParams']['batchsize']
-
-        keysIMG = numpyImages.keys()
-
-        nr_iter_dataAug = nr_iter*batchsize
-        np.random.seed()
-        whichDataList = np.random.randint(len(keysIMG), size=int(nr_iter_dataAug/self.params['ModelParams']['nProc']))
+        whichDataList = np.random.randint(len(keysIMG), size=int(nr_iter_dataAug / self.params['ModelParams']['nProc']))
 
         for whichData in whichDataList:
             filename = keysIMG[whichData]
-            currGtKey = filename
-            currImgKey = filename
+            defImg = numpyImages[filename]
+            defLab = numpyGT[filename]
+            (w,h,d) = defImg.shape
+            start = np.random.randint(d-16)
+            defImg = defImg[:,:,start:start+16]
+            defLab = defLab[:,:,start:start+16]
 
-            defImg = numpyImages[currImgKey]
-            defLab = numpyGT[currGtKey]
             weightData = np.zeros_like(defLab, dtype=float)
-            dataQueue.put(tuple((defImg,defLab, weightData)))
-    '''
+            weightData[defLab == 1] = np.prod(defLab.shape) / np.sum((defLab == 1).astype(dtype=np.float32))
+            weightData[defLab == 0] = np.prod(defLab.shape) / np.sum((defLab == 0).astype(dtype=np.float32))
+            dataQueue.put(tuple((defImg, defLab, weightData)))
+
 
     def trainThread(self,dataQueue,solver):
 
@@ -118,6 +81,7 @@ class VNet(object):
 
 
             matplotlib.pyplot.show()
+
 
 
     def train(self):
@@ -192,6 +156,8 @@ class VNet(object):
             dataPreparation[proc].start()
 
         self.trainThread(dataQueue, solver)
+
+
 
 
     def test(self):
