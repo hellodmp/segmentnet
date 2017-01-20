@@ -78,8 +78,6 @@ class VNet(object):
                 plt.clf()
                 plt.plot(range(0, it), train_loss[0:it])
                 plt.pause(0.00000001)
-
-
             matplotlib.pyplot.show()
 
 

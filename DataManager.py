@@ -78,7 +78,7 @@ class DataManager(object):
         return dat
 
 
-    def getNumpyData(self,dat,method,reshape_array=[1, 2, 0]):
+    def getNumpyData(self,dat,method):
         ret=dict()
         for key in dat:
             ret[key] = np.zeros([self.params['VolSize'][0], self.params['VolSize'][1], self.params['VolSize'][2]], dtype=np.float32)
@@ -102,9 +102,12 @@ class DataManager(object):
             resampler.SetOutputSpacing([self.params['dstRes'][0], self.params['dstRes'][1], self.params['dstRes'][2]])
             resampler.SetSize(newSize)
             resampler.SetInterpolator(method)
+            T = sitk.AffineTransform(3)
+            T.SetMatrix(img.GetDirection())
+            direct=img.GetDirection()
+            print direct, T
             if self.params['normDir']:
-                T=sitk.AffineTransform(3)
-                T.SetMatrix(img.GetDirection())
+
                 resampler.SetTransform(T.GetInverse())
 
             imgResampled = resampler.Execute(img)

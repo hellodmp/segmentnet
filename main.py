@@ -38,7 +38,7 @@ params['DataManagerParams']['normDir'] = False #if rotates the volume according 
 
 
 model=VN.VNet(params)
-model.test()
+model.train()
 
 
 '''
