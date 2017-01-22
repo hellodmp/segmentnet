@@ -101,7 +101,6 @@ class DataManager(object):
             newSize = newSize.astype(dtype=int)
 
             T=sitk.AffineTransform(3)
-
             T.SetMatrix(img.GetDirection())
 
             resampler = sitk.ResampleImageFilter()

@@ -77,8 +77,8 @@ class DataManager(object):
 
         return dat
 
-
-    def getNumpyData(self,dat,method):
+    '''
+    def getNumpyData(self,dat,method,reshape_array=[1, 2, 0]):
         ret=dict()
         for key in dat:
             ret[key] = np.zeros([self.params['VolSize'][0], self.params['VolSize'][1], self.params['VolSize'][2]], dtype=np.float32)
@@ -102,12 +102,9 @@ class DataManager(object):
             resampler.SetOutputSpacing([self.params['dstRes'][0], self.params['dstRes'][1], self.params['dstRes'][2]])
             resampler.SetSize(newSize)
             resampler.SetInterpolator(method)
-            T = sitk.AffineTransform(3)
-            T.SetMatrix(img.GetDirection())
-            direct=img.GetDirection()
-            print direct, T
             if self.params['normDir']:
-
+                T=sitk.AffineTransform(3)
+                T.SetMatrix(img.GetDirection())
                 resampler.SetTransform(T.GetInverse())
 
             imgResampled = resampler.Execute(img)
@@ -115,6 +112,49 @@ class DataManager(object):
             imgStartPx = (imgCentroid - self.params['VolSize'] / 2.0).astype(dtype=int)
             regionExtractor = sitk.RegionOfInterestImageFilter()
             regionExtractor.SetSize(list(self.params['VolSize'].astype(dtype=int)))
+            regionExtractor.SetIndex(list(imgStartPx))
+
+            imgResampledCropped = regionExtractor.Execute(imgResampled)
+
+            #ret[key] = np.transpose(sitk.GetArrayFromImage(imgResampledCropped).astype(dtype=float), [2, 1, 0])
+            ret[key] = np.transpose(sitk.GetArrayFromImage(imgResampledCropped).astype(dtype=float), [1, 2, 0])
+        return ret
+    '''
+
+    def getNumpyData(self,dat,method,reshape_array=[1, 2, 0]):
+        ret=dict()
+        for key in dat:
+            ret[key] = np.zeros([self.params['NumVolSize'][0], self.params['NumVolSize'][1], self.params['NumVolSize'][2]], dtype=np.float32)
+
+            img=dat[key]
+            #print "image_spacing=",img.GetSpacing()
+            #print "image_size=", img.GetSize()
+
+            #we rotate the image according to its transformation using the direction and according to the final spacing we want
+            factor = np.asarray(img.GetSpacing()) / [self.params['dstRes'][0], self.params['dstRes'][1],
+                                                     self.params['dstRes'][2]]
+
+            factorSize = np.asarray(img.GetSize() * factor, dtype=float)
+
+            newSize = np.max([factorSize, self.params['NumVolSize']], axis=0)
+
+            newSize = newSize.astype(dtype=int)
+
+            resampler = sitk.ResampleImageFilter()
+            resampler.SetReferenceImage(img)
+            resampler.SetOutputSpacing([self.params['dstRes'][0], self.params['dstRes'][1], self.params['dstRes'][2]])
+            resampler.SetSize(newSize)
+            resampler.SetInterpolator(method)
+            if self.params['normDir']:
+                T=sitk.AffineTransform(3)
+                T.SetMatrix(img.GetDirection())
+                resampler.SetTransform(T.GetInverse())
+
+            imgResampled = resampler.Execute(img)
+            imgCentroid = np.asarray(newSize, dtype=float) / 2.0
+            imgStartPx = (imgCentroid - self.params['NumVolSize'] / 2.0).astype(dtype=int)
+            regionExtractor = sitk.RegionOfInterestImageFilter()
+            regionExtractor.SetSize(list(self.params['NumVolSize'].astype(dtype=int)))
             regionExtractor.SetIndex(list(imgStartPx))
 
             imgResampledCropped = regionExtractor.Execute(imgResampled)

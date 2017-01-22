@@ -19,6 +19,7 @@ class VNet(object):
         caffe.set_mode_gpu()
         #caffe.set_mode_cpu()
 
+    '''
     def prepareDataThread(self, dataQueue, numpyImages, numpyGT):
         nr_iter = self.params['ModelParams']['numIterations']
         batchsize = self.params['ModelParams']['batchsize']
@@ -40,6 +41,46 @@ class VNet(object):
             weightData = np.zeros_like(defLab, dtype=float)
             weightData[defLab == 1] = np.prod(defLab.shape) / np.sum((defLab == 1).astype(dtype=np.float32))
             weightData[defLab == 0] = np.prod(defLab.shape) / np.sum((defLab == 0).astype(dtype=np.float32))
+            dataQueue.put(tuple((defImg, defLab, weightData)))
+    '''
+
+    def prepareDataThread(self, dataQueue, numpyImages, numpyGT):
+        nr_iter = self.params['ModelParams']['numIterations']
+        batchsize = self.params['ModelParams']['batchsize']
+        keysIMG = numpyImages.keys()
+
+        nr_iter_dataAug = nr_iter * batchsize
+        np.random.seed()
+        whichDataList = np.random.randint(len(keysIMG), size=int(nr_iter_dataAug / self.params['ModelParams']['nProc']))
+
+        for whichData in whichDataList:
+            filename = keysIMG[whichData]
+            defImg = numpyImages[filename]
+            defLab = numpyGT[filename]
+            (w,h,d) = defImg.shape
+            flag = False
+            for i in range(0,10):
+                startw = np.random.randint(w-self.params['DataManagerParams']['VolSize'][0])
+                starth = np.random.randint(h-self.params['DataManagerParams']['VolSize'][1])
+                startd = np.random.randint(d-self.params['DataManagerParams']['VolSize'][2])
+
+                defImg = defImg[startw:startw+self.params['DataManagerParams']['VolSize'][0],
+                         starth:starth+self.params['DataManagerParams']['VolSize'][1],
+                         startd:startd + self.params['DataManagerParams']['VolSize'][2]]
+
+                defLab = defLab[startw:startw+self.params['DataManagerParams']['VolSize'][0],
+                         starth:starth+self.params['DataManagerParams']['VolSize'][1],
+                         startd:startd + self.params['DataManagerParams']['VolSize'][2]]
+                if np.sum(defLab) > 50:
+                    flag = True
+                    break
+            if not flag:
+                continue
+
+            weightData = np.zeros_like(defLab, dtype=float)
+            weightData[defLab == 1] = np.prod(defLab.shape) / np.sum((defLab == 1).astype(dtype=np.float32))
+            weightData[defLab == 0] = np.prod(defLab.shape) / np.sum((defLab == 0).astype(dtype=np.float32))
+            #print "shape123=", defLab.shape
             dataQueue.put(tuple((defImg, defLab, weightData)))
 
 
@@ -157,7 +198,7 @@ class VNet(object):
 
 
 
-
+    '''
     def test(self):
         self.dataManagerTest = DM.DataManager(self.params['ModelParams']['dirTest'], self.params['ModelParams']['dirResult'], self.params['DataManagerParams'])
         self.dataManagerTest.loadTestData()
@@ -201,5 +242,51 @@ class VNet(object):
             utilities.sitk_show(image)
 
             #self.dataManagerTest.writeResultsFromNumpyLabel(np.squeeze(labelmap),key)
+    '''
+
+    def test(self):
+        self.dataManagerTest = DM.DataManager(self.params['ModelParams']['dirTest'], self.params['ModelParams']['dirResult'], self.params['DataManagerParams'])
+        self.dataManagerTest.loadTestData()
+
+        net = caffe.Net(self.params['ModelParams']['prototxtTest'],
+                        os.path.join(self.params['ModelParams']['dirSnapshots'],"_iter_" + str(self.params['ModelParams']['snapshot']) + ".caffemodel"),
+                        caffe.TEST)
+
+        numpyImages = self.dataManagerTest.getNumpyImages()
+        numpyImages_back = self.dataManagerTest.getNumpyImages()
+
+        for key in numpyImages:
+            mean = np.mean(numpyImages[key][numpyImages[key]>0])
+            std = np.std(numpyImages[key][numpyImages[key]>0])
+
+            numpyImages[key] -= mean
+            numpyImages[key] /= std
+
+        results = dict()
+
+        for key in numpyImages:
+            for i in range(0,2):
+                image_input = numpyImages[key][32:160,32:160,i*16:(i+1)*16]
+                btch = np.reshape(image_input,[1,1,image_input.shape[0],image_input.shape[1],image_input.shape[2]])
+
+                net.blobs['data'].data[...] = btch
+
+                out = net.forward()
+                l = out["labelmap"]
+                labelmap = np.squeeze(l[0,1,:,:,:])
+
+                #results[key] = np.squeeze(labelmap)
+
+                #image = numpyImages_back[key]
+                #image[results[key] > 0.5] = 1.0
+                #utilities.sitk_show(image)
+
+                image = numpyImages_back[key][32:160,32:160,i*16:(i+1)*16]
+                result = np.squeeze(labelmap)
+                utilities.sitk_show(image)
+                image[result>=0.5]=1
+                utilities.sitk_show(image)
+
+                #self.dataManagerTest.writeResultsFromNumpyLabel(np.squeeze(labelmap),key)
 
 

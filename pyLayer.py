@@ -43,12 +43,14 @@ class DiceLoss(caffe.Layer):
             # compute dice
             CurrResult = (self.result[i,:]).astype(dtype=np.float32)
             CurrGT = (self.gt[i,:]).astype(dtype=np.float32)
+            self.union[i]=(np.sum(CurrResult) + np.sum(CurrGT))+0.001
+            self.intersection[i]=(np.sum(CurrResult * CurrGT))+0.0005
+            #print "shape=", CurrResult.shape, CurrGT.shape
+            #print "union=",self.union[i]
+            #print "intersection=", self.intersection[i]
 
-            self.union[i]=(np.sum(CurrResult) + np.sum(CurrGT))
-            self.intersection[i]=(np.sum(CurrResult * CurrGT))
-
-            dice[i] = 2 * self.intersection[i] / (self.union[i]+0.00001)
-            print dice[i]
+            dice[i] = 2 * (self.intersection[i]) / (self.union[i])
+            print "dice=",dice[i]
 
         top[0].data[0]=np.sum(dice)
 
@@ -59,8 +61,8 @@ class DiceLoss(caffe.Layer):
             for i in range(0, bottom[btm].diff.shape[0]):
 
                 bottom[btm].diff[i, 0, :] += 2.0 * (
-                    (self.gt[i, :] * self.union[i]) / ((self.union[i]) ** 2) - 2.0*prob[i,1,:]*(self.intersection[i]) / (
-                    (self.union[i]) ** 2))
+                    (self.gt[i, :] * self.union[i]) / ((self.union[i]) ** 2) - 2.0*prob[i,1,:]*(self.intersection[i]) /
+                    ((self.union[i]) ** 2))
                 bottom[btm].diff[i, 1, :] -= 2.0 * (
-                    (self.gt[i, :] * self.union[i]) / ((self.union[i]) ** 2) - 2.0*prob[i,1,:]*(self.intersection[i]) / (
-                    (self.union[i]) ** 2))
+                    (self.gt[i, :] * self.union[i]) / ((self.union[i]) ** 2) - 2.0*prob[i,1,:]*(self.intersection[i]) /
+                    ((self.union[i]) ** 2))

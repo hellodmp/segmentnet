@@ -1,5 +1,5 @@
 input: "data"
-input_shape{dim: 1 dim: 1 dim: 128 dim: 128 dim: 64}
+input_shape{dim: 1 dim: 1 dim: 128 dim: 128 dim: 16}
 
 layer {
   name: "conv_in128_chan16"
@@ -1160,7 +1160,7 @@ layer {
       shape {
         dim: 1  # copy the dimension from below
         dim: 2
-        dim: 1048576
+        dim: 262144
       }
     }
   }
@@ -1187,7 +1187,7 @@ layer {
         dim: 2
         dim: 128
         dim: 128
-        dim: 64
+        dim: 16
       }
     }
   }
