@@ -5,6 +5,8 @@ from preprocess import dicomparser
 from os import listdir
 from os.path import isfile, isdir, join
 
+import utilities
+
 class LabelManager(object):
     srcFolder = None
     spacing = None
@@ -98,6 +100,7 @@ class LabelManager(object):
     def createLabelFileList(self):
         self.fileList = [self.srcFolder+"/"+f for f in listdir(self.srcFolder) if isdir(join(self.srcFolder, f))]
         print 'FILE LIST: ' + str(self.fileList)
+
     '''
     #attention rtstructure is not same with image
     def load_labels(self, structure_names):
@@ -132,7 +135,7 @@ class LabelManager(object):
                 (w, h) = mask_dict[mask_dict.keys()[0]].shape
                 data = np.zeros((len(z_list), w, h))
                 for j in range(len(z_list)):
-                    key = str(z_list[i])+'0'
+                    key = str(z_list[j])+'0'
                     if key in mask_dict.keys():
                         data[j,:,:] = mask_dict[key].transpose()
                     else:
