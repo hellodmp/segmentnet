@@ -19,12 +19,13 @@ params['ModelParams']['device']=1
 params['ModelParams']['prototxtTrain']=os.path.join(basePath,'Prototxt/train_noPooling_ResNet_cinque.prototxt')
 params['ModelParams']['prototxtTest']=os.path.join(basePath,'Prototxt/test_noPooling_ResNet_cinque.prototxt')
 params['ModelParams']['snapshot']=0
-#params['ModelParams']['snapshot']=18000
-params['ModelParams']['dirTrain']=os.path.join(basePath,'Dataset/data')
+#params['ModelParams']['snapshot']=90000
+params['ModelParams']['dirTrain']=os.path.join(basePath,'Dataset/data1')
 params['ModelParams']['dirTest']=os.path.join(basePath,'Dataset/Test')
 params['ModelParams']['dirResult']=os.path.join(basePath,'Results') #where we need to save the results (relative to the base path)
 params['ModelParams']['dirSnapshots']=os.path.join(basePath,'Models/') #where to save the models while training
 params['ModelParams']['batchsize'] = 2 #the batchsize
+params['ModelParams']['labelsize'] = 2
 params['ModelParams']['numIterations'] = 100000 #the number of iterations
 #params['ModelParams']['baseLR'] = 0.0001 #the learning rate, initial one
 params['ModelParams']['baseLR'] = 0.00001 #the learning rate, initial one
@@ -39,7 +40,9 @@ params['DataManagerParams']['VolSize'] = np.asarray([128,128,16],dtype=int)
 params['DataManagerParams']['normDir'] = False #if rotates the volume according to its transformation in the mhd file. Not reccommended.
 
 model=VN.VNet(params)
+
 model.train()
+#model.test()
 
 '''
 model=VN.VNet(params)

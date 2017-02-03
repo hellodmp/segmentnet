@@ -16,7 +16,7 @@ class DiceLoss(caffe.Layer):
             raise Exception("Need two inputs to compute the dice. the result of the softmax and the ground truth.")
 
 
-    '''
+
     def reshape(self, bottom, top):
         # check input dimensions match
         if bottom[0].count != 2*bottom[1].count:
@@ -26,17 +26,7 @@ class DiceLoss(caffe.Layer):
 
         # loss output is two scalars (mean and std)
         top[0].reshape(1)
-    '''
 
-    def reshape(self, bottom, top):
-        # check input dimensions match
-        if bottom[0].count != bottom[1].count:
-            print bottom[0].data.shape
-            print bottom[1].data.shape
-            raise Exception("the dimension of inputs should match")
-
-        # loss output is two scalars (mean and std)
-        top[0].reshape(1)
 
 
     def forward(self, bottom, top):

@@ -98,9 +98,10 @@ class LabelManager(object):
     def createLabelFileList(self):
         self.fileList = [self.srcFolder+"/"+f for f in listdir(self.srcFolder) if isdir(join(self.srcFolder, f))]
         print 'FILE LIST: ' + str(self.fileList)
-
+    '''
     #attention rtstructure is not same with image
-    def load_labels(self, structure_names=["Urinary Bladder"]):
+    def load_labels(self, structure_names):
+    #def load_labels(self, structure_names=["FemoralHead"]):
         sitkLabels = {}
         for path in self.fileList:
             z_list, image_data = self.get_z_list(path)
@@ -117,6 +118,31 @@ class LabelManager(object):
             sitkLabels[path] = sitk.GetImageFromArray(data)
             sitkLabels[path].SetSpacing(self.spacing)
         return sitkLabels
+    '''
+
+    def load_labels(self, structure_names):
+    #def load_labels(self, structure_names=["FemoralHead"]):
+        sitkLabels = {}
+        for path in self.fileList:
+            z_list, image_data = self.get_z_list(path)
+            mask_list = self.get_mask_list(path, structure_names, image_data)
+            label_list = []
+            for i in range(len(mask_list)):
+                mask_dict = mask_list[i]
+                (w, h) = mask_dict[mask_dict.keys()[0]].shape
+                data = np.zeros((len(z_list), w, h))
+                for j in range(len(z_list)):
+                    key = str(z_list[i])+'0'
+                    if key in mask_dict.keys():
+                        data[j,:,:] = mask_dict[key].transpose()
+                    else:
+                        data[j,:,:] = np.zeros((w, h))
+                image = sitk.GetImageFromArray(data)
+                image.SetSpacing(self.spacing)
+                label_list.append(image)
+            sitkLabels[path] = label_list
+        return sitkLabels
+
 
     def check_structure(self, structure_name="Urinary Bladder"):
         index = 0
@@ -135,18 +161,18 @@ class LabelManager(object):
                 print index,"None"
             index = index + 1
 
-
-if __name__ == '__main__':
-    manager = LabelManager("./Dataset/data1", np.array([2.0, 2.0, 5.0]))
-    manager.check_structure()
-
-
 '''
 if __name__ == '__main__':
     manager = LabelManager("./Dataset/data", np.array([2.0, 2.0, 5.0]))
-    manager.createLabelFileList()
-    manager.load_labels()
+    manager.check_structure("FemoralHead")
 '''
+
+
+if __name__ == '__main__':
+    manager = LabelManager("./Dataset/data", np.array([2.0, 2.0, 5.0]))
+    manager.createLabelFileList()
+    manager.load_labels(["FemoralHead"])
+
 
 '''
 if __name__ == '__main__':

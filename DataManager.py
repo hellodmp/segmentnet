@@ -15,6 +15,7 @@ class DataManager(object):
     sitkImages=None
     sitkGT=None
     meanIntensityTrain = None
+    label_list = ["Urinary Bladder","FemoralHead"]
 
     def __init__(self, srcFolder, resultsDir, parameters):
         self.params=parameters
@@ -42,23 +43,17 @@ class DataManager(object):
                 if len(dicom_names) > 1:
                     break
             reader.SetFileNames(dicom_names)
-            self.sitkImages[dir] = rescalFilt.Execute(sitk.Cast(reader.Execute(),sitk.sitkFloat32))
-            stats.Execute(self.sitkImages[dir])
-            m += stats.GetMean()
-        self.meanIntensityTrain = m / len(self.sitkImages)
-
+            self.sitkImages[dir] = [rescalFilt.Execute(sitk.Cast(reader.Execute(),sitk.sitkFloat32))]
 
     def loadTrainingData(self):
         self.createImageFileList()
         self.loadImages()
         #load labels
         key = self.sitkImages.keys()[0]
-        spacing = self.sitkImages[key].GetSpacing()
+        spacing = self.sitkImages[key][0].GetSpacing()
         manager = LabelManager(self.srcFolder, spacing)
         manager.createLabelFileList()
-        self.sitkGT = manager.load_labels()
-        #self.createGTFileList()
-        #self.loadGT()
+        self.sitkGT = manager.load_labels(self.label_list)
 
     def loadTestData(self):
         self.createImageFileList()
@@ -66,101 +61,61 @@ class DataManager(object):
 
     def getNumpyImages(self):
         dat = self.getNumpyData(self.sitkImages,sitk.sitkLinear)
+        for key in dat:
+            dat[key] = dat[key][0]
+            print "dat[key]=", np.mean(dat[key])
         return dat
 
 
     def getNumpyGT(self):
         dat = self.getNumpyData(self.sitkGT,sitk.sitkLinear)
-
         for key in dat:
-            dat[key] = (dat[key]>0.5).astype(dtype=np.float32)
-
+            dat_list = dat[key]
+            num_dat = np.zeros([len(dat[key]), self.params['NumVolSize'][0], self.params['NumVolSize'][1],
+                            self.params['NumVolSize'][2]], dtype=np.float32)
+            for i in range(len(dat_list)):
+                num_dat[i,:,:,:] = (dat_list[i]>0.5).astype(dtype=np.float32)
+            dat[key] = num_dat
+            print "dat[key]=", np.mean(dat[key])
         return dat
 
-    '''
-    def getNumpyData(self,dat,method,reshape_array=[1, 2, 0]):
+
+
+    def getNumpyData(self, dat, method):
         ret=dict()
         for key in dat:
-            ret[key] = np.zeros([self.params['VolSize'][0], self.params['VolSize'][1], self.params['VolSize'][2]], dtype=np.float32)
+            dat_list = dat[key]
+            result_list = []
+            for i in range(len(dat_list)):
+                img = dat_list[i]
+                # we rotate the image according to its transformation using the direction and according to the final spacing we want
+                factor = np.asarray(img.GetSpacing()) / [self.params['dstRes'][0], self.params['dstRes'][1],
+                                                         self.params['dstRes'][2]]
 
-            img=dat[key]
-            #print "image_spacing=",img.GetSpacing()
-            #print "image_size=", img.GetSize()
+                factorSize = np.asarray(img.GetSize() * factor, dtype=float)
+                newSize = np.max([factorSize, self.params['NumVolSize']], axis=0)
+                newSize = newSize.astype(dtype=int)
 
-            #we rotate the image according to its transformation using the direction and according to the final spacing we want
-            factor = np.asarray(img.GetSpacing()) / [self.params['dstRes'][0], self.params['dstRes'][1],
-                                                     self.params['dstRes'][2]]
+                resampler = sitk.ResampleImageFilter()
+                resampler.SetReferenceImage(img)
+                resampler.SetOutputSpacing([self.params['dstRes'][0], self.params['dstRes'][1], self.params['dstRes'][2]])
+                resampler.SetSize(newSize)
+                resampler.SetInterpolator(method)
+                if self.params['normDir']:
+                    T = sitk.AffineTransform(3)
+                    T.SetMatrix(img.GetDirection())
+                    resampler.SetTransform(T.GetInverse())
 
-            factorSize = np.asarray(img.GetSize() * factor, dtype=float)
+                imgResampled = resampler.Execute(img)
+                imgCentroid = np.asarray(newSize, dtype=float) / 2.0
+                imgStartPx = (imgCentroid - self.params['NumVolSize'] / 2.0).astype(dtype=int)
+                regionExtractor = sitk.RegionOfInterestImageFilter()
+                regionExtractor.SetSize(list(self.params['NumVolSize'].astype(dtype=int)))
+                regionExtractor.SetIndex(list(imgStartPx))
 
-            newSize = np.max([factorSize, self.params['VolSize']], axis=0)
-
-            newSize = newSize.astype(dtype=int)
-
-            resampler = sitk.ResampleImageFilter()
-            resampler.SetReferenceImage(img)
-            resampler.SetOutputSpacing([self.params['dstRes'][0], self.params['dstRes'][1], self.params['dstRes'][2]])
-            resampler.SetSize(newSize)
-            resampler.SetInterpolator(method)
-            if self.params['normDir']:
-                T=sitk.AffineTransform(3)
-                T.SetMatrix(img.GetDirection())
-                resampler.SetTransform(T.GetInverse())
-
-            imgResampled = resampler.Execute(img)
-            imgCentroid = np.asarray(newSize, dtype=float) / 2.0
-            imgStartPx = (imgCentroid - self.params['VolSize'] / 2.0).astype(dtype=int)
-            regionExtractor = sitk.RegionOfInterestImageFilter()
-            regionExtractor.SetSize(list(self.params['VolSize'].astype(dtype=int)))
-            regionExtractor.SetIndex(list(imgStartPx))
-
-            imgResampledCropped = regionExtractor.Execute(imgResampled)
-
-            #ret[key] = np.transpose(sitk.GetArrayFromImage(imgResampledCropped).astype(dtype=float), [2, 1, 0])
-            ret[key] = np.transpose(sitk.GetArrayFromImage(imgResampledCropped).astype(dtype=float), [1, 2, 0])
-        return ret
-    '''
-
-    def getNumpyData(self,dat,method,reshape_array=[1, 2, 0]):
-        ret=dict()
-        for key in dat:
-            ret[key] = np.zeros([self.params['NumVolSize'][0], self.params['NumVolSize'][1], self.params['NumVolSize'][2]], dtype=np.float32)
-
-            img=dat[key]
-            #print "image_spacing=",img.GetSpacing()
-            #print "image_size=", img.GetSize()
-
-            #we rotate the image according to its transformation using the direction and according to the final spacing we want
-            factor = np.asarray(img.GetSpacing()) / [self.params['dstRes'][0], self.params['dstRes'][1],
-                                                     self.params['dstRes'][2]]
-
-            factorSize = np.asarray(img.GetSize() * factor, dtype=float)
-
-            newSize = np.max([factorSize, self.params['NumVolSize']], axis=0)
-
-            newSize = newSize.astype(dtype=int)
-
-            resampler = sitk.ResampleImageFilter()
-            resampler.SetReferenceImage(img)
-            resampler.SetOutputSpacing([self.params['dstRes'][0], self.params['dstRes'][1], self.params['dstRes'][2]])
-            resampler.SetSize(newSize)
-            resampler.SetInterpolator(method)
-            if self.params['normDir']:
-                T=sitk.AffineTransform(3)
-                T.SetMatrix(img.GetDirection())
-                resampler.SetTransform(T.GetInverse())
-
-            imgResampled = resampler.Execute(img)
-            imgCentroid = np.asarray(newSize, dtype=float) / 2.0
-            imgStartPx = (imgCentroid - self.params['NumVolSize'] / 2.0).astype(dtype=int)
-            regionExtractor = sitk.RegionOfInterestImageFilter()
-            regionExtractor.SetSize(list(self.params['NumVolSize'].astype(dtype=int)))
-            regionExtractor.SetIndex(list(imgStartPx))
-
-            imgResampledCropped = regionExtractor.Execute(imgResampled)
-
-            #ret[key] = np.transpose(sitk.GetArrayFromImage(imgResampledCropped).astype(dtype=float), [2, 1, 0])
-            ret[key] = np.transpose(sitk.GetArrayFromImage(imgResampledCropped).astype(dtype=float), [1, 2, 0])
+                imgResampledCropped = regionExtractor.Execute(imgResampled)
+                result_list.append(np.transpose(sitk.GetArrayFromImage(imgResampledCropped).astype(dtype=float), [1, 2, 0]))
+            ret[key] = result_list
         return ret
 
 
