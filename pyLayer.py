@@ -16,18 +16,6 @@ class DiceLoss(caffe.Layer):
             raise Exception("Need two inputs to compute the dice. the result of the softmax and the ground truth.")
 
 
-    '''
-    def reshape(self, bottom, top):
-        # check input dimensions match
-        if bottom[0].count != 2*bottom[1].count:
-            print bottom[0].data.shape
-            print bottom[1].data.shape
-            raise Exception("the dimension of inputs should match")
-
-        # loss output is two scalars (mean and std)
-        top[0].reshape(1)
-    '''
-
     def reshape(self, bottom, top):
         # check input dimensions match
         if bottom[0].count != bottom[1].count:
@@ -41,37 +29,28 @@ class DiceLoss(caffe.Layer):
 
     def forward(self, bottom, top):
 
-        dice = np.zeros(bottom[0].data.shape[0],dtype=np.float32)
-        self.union = np.zeros(bottom[0].data.shape[0],dtype=np.float32)
-        self.intersection = np.zeros(bottom[0].data.shape[0],dtype=np.float32)
+        dice = np.zeros((bottom[0].data.shape[0],bottom[0].data.shape[1]),dtype=np.float32)
+        print bottom[0].data.shape[0]
+        self.union = np.zeros((bottom[0].data.shape[0],bottom[0].data.shape[1]),dtype=np.float32)
+        self.intersection = np.zeros((bottom[0].data.shape[0],bottom[0].data.shape[1]),dtype=np.float32)
 
-        temp1 = bottom[0].data[...]
-        temp2 = np.argmax(bottom[0].data[...],axis=1)
+        self.result = np.reshape(np.squeeze(np.argmax(bottom[0].data[...],axis=1)),
+                                 [bottom[0].data.shape[0],bottom[0].data.shape[2]])
+        self.gt = np.reshape(np.squeeze(np.argmax(bottom[1].data[...], axis=1)),
+                                 [bottom[1].data.shape[0], bottom[1].data.shape[2]])
 
-        temp3 = bottom[1].data[...]
-        temp4 = np.argmax(bottom[1].data[...], axis=1)
-
-        self.result = np.reshape(np.squeeze(np.argmax(bottom[0].data[...],axis=1)),[bottom[0].data.shape[0],bottom[0].data.shape[2]])
-        self.gt = np.reshape(np.squeeze(bottom[1].data[...]),[bottom[1].data.shape[0],bottom[1].data.shape[2]])
-        print "bottom=", bottom[0].data.shape, bottom[1].data.shape
-        print "shape=", self.result.shape, self.gt.shape
-
-        self.gt = (self.gt > 0.5).astype(dtype=np.float32)
+        self.gt = self.gt.astype(dtype=np.float32)
         self.result = self.result.astype(dtype=np.float32)
 
         for i in range(0,bottom[0].data.shape[0]):
-            # compute dice
-            CurrResult = (self.result[i,:]).astype(dtype=np.float32)
-            CurrGT = (self.gt[i,:]).astype(dtype=np.float32)
-            self.union[i]=(np.sum(CurrResult) + np.sum(CurrGT))+0.001
-            self.intersection[i]=(np.sum(CurrResult * CurrGT))+0.0005
-            #print "shape=", CurrResult.shape, CurrGT.shape
-            #print "union=",self.union[i]
-            #print "intersection=", self.intersection[i]
-
-            dice[i] = 2 * (self.intersection[i]) / (self.union[i])
+            for j in range(0,bottom[0].data.shape[1]):
+                # compute dice
+                CurrResult = (self.result[i,:]==j).astype(dtype=np.float32)
+                CurrGT = (self.gt[i,:]==j).astype(dtype=np.float32)
+                self.union[i,j]=(np.sum(CurrResult) + np.sum(CurrGT))+0.0001
+                self.intersection[i,j]=(np.sum(CurrResult * CurrGT))
+                dice[i,j] = 2 * (self.intersection[i,j]) / (self.union[i,j])
             print "dice=",dice[i]
-
         top[0].data[0]=np.sum(dice)
 
 
@@ -80,11 +59,10 @@ class DiceLoss(caffe.Layer):
             prob = bottom[0].data[...]
             bottom[btm].diff[...] = np.zeros(bottom[btm].diff.shape, dtype=np.float32)
             for i in range(0, bottom[btm].diff.shape[0]):
-
-                bottom[btm].diff[i, 0, :] += 2.0 * (
-                    (self.gt[i, :] * self.union[i]) / ((self.union[i]) ** 2) - 2.0*prob[i,1,:]*(self.intersection[i]) /
-                    ((self.union[i]) ** 2))
-                bottom[btm].diff[i, 1, :] -= 2.0 * (
-                    (self.gt[i, :] * self.union[i]) / ((self.union[i]) ** 2) - 2.0*prob[i,1,:]*(self.intersection[i]) /
-                    ((self.union[i]) ** 2))
+                for j in range(0, bottom[0].data.shape[1]):
+                    if self.union[i,j] <= 10:
+                        continue
+                    bottom[btm].diff[i, j, :] -= 2.0 * (
+                        (self.gt[i,j] * self.union[i,j]) / ((self.union[i,j]) ** 2) - 2.0*prob[i,j]*(self.intersection[i,j]) /
+                        ((self.union[i,j]) ** 2))
 

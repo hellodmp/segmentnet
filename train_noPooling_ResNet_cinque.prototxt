@@ -2,7 +2,7 @@ input: "data"
 input_shape{dim: 2 dim: 1 dim: 128 dim: 128 dim: 16}
 
 input: "label"
-input_shape{dim: 2 dim: 2 dim: 128 dim: 128 dim: 16}
+input_shape{dim: 2 dim: 3 dim: 128 dim: 128 dim: 16}
 
 
 layer {
@@ -1167,7 +1167,7 @@ layer {
     decay_mult: 0.0
   }
   convolution_param {
-    num_output: 2
+    num_output: 3
     kernel_size: 1
     stride: 1
     weight_filler {
@@ -1189,7 +1189,7 @@ layer {
     reshape_param {
       shape {
         dim: 0  # copy the dimension from below
-        dim: 2
+        dim: 3
         dim: 262144
       }
     }
@@ -1204,7 +1204,7 @@ layer {
     reshape_param {
       shape {
         dim: 0  # copy the dimension from below
-        dim: 2
+        dim: 3
         dim: 262144
       }
     }

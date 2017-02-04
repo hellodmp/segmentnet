@@ -157,6 +157,7 @@ class VNet(object):
 
         self.trainThread(dataQueue, solver)
 
+
     def test(self):
         self.dataManagerTest = DM.DataManager(self.params['ModelParams']['dirTest'], self.params['ModelParams']['dirResult'], self.params['DataManagerParams'])
         self.dataManagerTest.loadTestData()

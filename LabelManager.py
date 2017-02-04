@@ -5,8 +5,6 @@ from preprocess import dicomparser
 from os import listdir
 from os.path import isfile, isdir, join
 
-import utilities
-
 class LabelManager(object):
     srcFolder = None
     spacing = None
@@ -101,27 +99,6 @@ class LabelManager(object):
         self.fileList = [self.srcFolder+"/"+f for f in listdir(self.srcFolder) if isdir(join(self.srcFolder, f))]
         print 'FILE LIST: ' + str(self.fileList)
 
-    '''
-    #attention rtstructure is not same with image
-    def load_labels(self, structure_names):
-    #def load_labels(self, structure_names=["FemoralHead"]):
-        sitkLabels = {}
-        for path in self.fileList:
-            z_list, image_data = self.get_z_list(path)
-            mask_list = self.get_mask_list(path, structure_names, image_data)
-            mask_dict = mask_list[0]
-            (w, h) = mask_dict[mask_dict.keys()[0]].shape
-            data = np.zeros((len(z_list), w, h))
-            for i in range(len(z_list)):
-                key = str(z_list[i])+'0'
-                if key in mask_dict.keys():
-                    data[i,:,:] = mask_dict[key].transpose()
-                else:
-                    data[i,:,:] = np.zeros((w, h))
-            sitkLabels[path] = sitk.GetImageFromArray(data)
-            sitkLabels[path].SetSpacing(self.spacing)
-        return sitkLabels
-    '''
 
     def load_labels(self, structure_names):
     #def load_labels(self, structure_names=["FemoralHead"]):

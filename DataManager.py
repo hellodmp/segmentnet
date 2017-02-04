@@ -63,7 +63,6 @@ class DataManager(object):
         dat = self.getNumpyData(self.sitkImages,sitk.sitkLinear)
         for key in dat:
             dat[key] = dat[key][0]
-            print "dat[key]=", np.mean(dat[key])
         return dat
 
 
@@ -71,12 +70,16 @@ class DataManager(object):
         dat = self.getNumpyData(self.sitkGT,sitk.sitkLinear)
         for key in dat:
             dat_list = dat[key]
-            num_dat = np.zeros([len(dat[key]), self.params['NumVolSize'][0], self.params['NumVolSize'][1],
+            num_dat = np.zeros([len(dat_list)+1, self.params['NumVolSize'][0], self.params['NumVolSize'][1],
+                            self.params['NumVolSize'][2]], dtype=np.float32)
+            total = np.zeros([self.params['NumVolSize'][0], self.params['NumVolSize'][1],
                             self.params['NumVolSize'][2]], dtype=np.float32)
             for i in range(len(dat_list)):
                 num_dat[i,:,:,:] = (dat_list[i]>0.5).astype(dtype=np.float32)
+                total += num_dat[i,:,:,:]
+            #add back goround
+            num_dat[len(dat_list), :, :, :] = (total==0).astype(dtype=np.float32)
             dat[key] = num_dat
-            print "dat[key]=", np.mean(dat[key])
         return dat
 
 
