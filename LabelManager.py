@@ -1,7 +1,7 @@
 import numpy as np
 import SimpleITK as sitk
 from matplotlib.path import Path
-from preprocess import dicomparser
+import dicomparser
 from os import listdir
 from os.path import isfile, isdir, join
 
