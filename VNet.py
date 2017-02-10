@@ -15,9 +15,9 @@ class VNet(object):
 
     def __init__(self,params):
         self.params=params
-        caffe.set_device(self.params['ModelParams']['device'])
-        caffe.set_mode_gpu()
-        #caffe.set_mode_cpu()
+        #caffe.set_device(self.params['ModelParams']['device'])
+        #caffe.set_mode_gpu()
+        caffe.set_mode_cpu()
 
     def prepareDataThread(self, dataQueue, numpyImages, numpyGT):
         nr_iter = self.params['ModelParams']['numIterations']
@@ -87,7 +87,46 @@ class VNet(object):
             matplotlib.pyplot.show()
 
 
+    def train(self):
+        print self.params['ModelParams']['dirTrain']
 
+        #we define here a data manage object
+        self.dataManagerTrain = DM.DataManager(self.params['ModelParams']['dirTrain'],
+                                               self.params['ModelParams']['dirResult'],
+                                               self.params['DataManagerParams'])
+
+        self.dataManagerTrain.loadTrainingData() #loads in sitk format
+
+        howManyImages = len(self.dataManagerTrain.sitkImages)
+        howManyGT = len(self.dataManagerTrain.sitkGT)
+
+        assert howManyGT == howManyImages
+
+        print "The dataset has shape: data - " + str(howManyImages) + ". labels - " + str(howManyGT)
+
+        test_interval = 50000
+
+        numpyImages = self.dataManagerTrain.getNumpyImages()
+        numpyGT = self.dataManagerTrain.getNumpyGT()
+
+        for key in numpyImages:
+            mean = np.mean(numpyImages[key][numpyImages[key]>0])
+            std = np.std(numpyImages[key][numpyImages[key]>0])
+            numpyImages[key]-=mean
+            numpyImages[key]/=std
+
+        dataQueue = Queue(30) #max 50 images in queue
+        dataPreparation = [None] * self.params['ModelParams']['nProc']
+
+        #thread creation
+        for proc in range(0,self.params['ModelParams']['nProc']):
+            dataPreparation[proc] = Process(target=self.prepareDataThread, args=(dataQueue, numpyImages, numpyGT))
+            dataPreparation[proc].daemon = True
+            dataPreparation[proc].start()
+
+        #self.trainThread(dataQueue, solver)
+
+    '''
     def train(self):
         print self.params['ModelParams']['dirTrain']
 
@@ -155,6 +194,7 @@ class VNet(object):
             dataPreparation[proc].start()
 
         self.trainThread(dataQueue, solver)
+    '''
 
 
     def filter(self, dat):
