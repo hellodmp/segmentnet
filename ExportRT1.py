@@ -28,27 +28,31 @@ class RTExport(object):
                 return structureSet, roiObservation, roiContour
         return None, None, None
 
-    def modifyStructureSet(self, structureSet):
-        structureSet.ROIName = "AUTO " + structureSet.ROIName
+    def modifyStructureSet(self, structureSet,roiNumber):
+        structureSet.ROIName += " AUTO"
+        structureSet.ROINumber = roiNumber
         return structureSet
 
-    def modifyRoiObservation(self, roiObservation):
+    def modifyRoiObservation(self, roiObservation,roiNumber):
+        roiObservation.ReferenceROINumber = roiNumber
         return roiObservation
 
-    def modifyRoiContour(self, roiContour):
+    def modifyRoiContour(self, roiContour,roiNumber):
+        roiContour.ReferenceROINumber = roiNumber
         return roiContour
 
     def addNewLabel(self, name):
         structureSet, roiObservation, roiContour = self.get_by_structure(name)
-        structureSet = self.modifyStructureSet(structureSet)
+        roiId = len(self.destDs.StructureSetROIs)
+        structureSet = self.modifyStructureSet(structureSet,roiId)
         structureSetList = self.destDs.StructureSetROIs
         structureSetList.append(structureSet)
 
-        roiObservation = self.modifyRoiObservation(roiObservation)
+        roiObservation = self.modifyRoiObservation(roiObservation,roiId)
         roiObservationList = self.destDs.RTROIObservations
         roiObservationList.append(roiObservation)
 
-        roiContour = self.modifyRoiContour(roiContour)
+        roiContour = self.modifyRoiContour(roiContour,roiId)
         roiContourList = self.destDs.ROIContours
         roiContourList.append(roiContour)
         print "ok"
