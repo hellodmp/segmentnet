@@ -120,6 +120,7 @@ class DataManager(object):
             ret[key] = result_list
         return ret
 
+
     def writeResultsFromNumpyLabel(self, result, key):
         img = self.sitkImages[key][0]
 
@@ -150,12 +151,52 @@ class DataManager(object):
         # connected component analysis
         cc = sitk.ConnectedComponentImageFilter()
         toWritecc = cc.Execute(sitk.Cast(toWrite, sitk.sitkUInt8))
-        '''
+
+        edges = sitk.CannyEdgeDetection(sitk.Cast(toWritecc, sitk.sitkFloat32),
+                                        lowerThreshold=0.5,upperThreshold=1.0)
+        edge_indexes = np.where(sitk.GetArrayFromImage(edges) == 1.0)
+
+        # Note the reversed order of access between SimpleITK and numpy (z,y,x)
+        physical_points = [edges.TransformIndexToPhysicalPoint([int(x), int(y), int(z)]) \
+                           for z, y, x in zip(edge_indexes[0], edge_indexes[1], edge_indexes[2])]
+
+
+    '''
+    def writeResultsFromNumpyLabel(self, result, key):
+        img = self.sitkImages[key][0]
+
+        factor = np.asarray([self.params['dstRes'][0], self.params['dstRes'][1],
+                             self.params['dstRes'][2]]) / [img.GetSpacing()[0], img.GetSpacing()[1], img.GetSpacing()[2]]
+        factorSize = np.asarray(result.shape * factor, dtype=float)
+        newSize = np.max([factorSize, self.params['NumVolSize']], axis=0)
+        newSize = newSize.astype(dtype=int)
+        label = np.zeros(img.GetSize(), dtype=np.float32)
+        start = (img.GetSize() - newSize) / 2
+        end = start + result.shape
+        label[start[0]:end[0],start[1]:end[1],start[2]:end[2]] = result
+
+        result_image = sitk.GetImageFromArray(np.transpose(label, [2, 1, 0]))
+        result_image.SetSpacing(self.params['dstRes'])
+
+        resampler = sitk.ResampleImageFilter()
+        resampler.SetReferenceImage(result_image)
+        resampler.SetOutputSpacing(img.GetSpacing())
+        resampler.SetSize(newSize)
+        resampler.SetInterpolator(sitk.sitkLinear)
+        #utilities.sitk_show(num_data)
+        thfilter = sitk.BinaryThresholdImageFilter()
+        thfilter.SetInsideValue(1)
+        thfilter.SetOutsideValue(0)
+        thfilter.SetLowerThreshold(0.5)
+        toWrite = thfilter.Execute(result_image)
+        # connected component analysis
+        cc = sitk.ConnectedComponentImageFilter()
+        toWritecc = cc.Execute(sitk.Cast(toWrite, sitk.sitkUInt8))
+
         #arrCC = np.transpose(sitk.GetArrayFromImage(toWritecc).astype(dtype=float), [2, 1, 0])
         #utilities.sitk_show(arrCC)
-        edges = sitk.CannyEdgeDetection(sitk.Cast(toWritecc, sitk.sitkFloat32), lowerThreshold=0.5,
-                                        upperThreshold=1.0, variance=(1.0, 1.0, 1.0))
-        '''
+        #edges = sitk.CannyEdgeDetection(sitk.Cast(toWritecc, sitk.sitkFloat32), lowerThreshold=0.5,upperThreshold=1.0, variance=(1.0, 1.0, 1.0))
+
         edges = sitk.CannyEdgeDetection(sitk.Cast(toWritecc, sitk.sitkFloat32),
                                         lowerThreshold=0.5,upperThreshold=1.0)
         edge_indexes = np.where(sitk.GetArrayFromImage(edges) == 1.0)
@@ -175,6 +216,7 @@ class DataManager(object):
         res, _, _, _ = linalg.lstsq(A, b)
 
         print("The sphere's radius is: {0:.2f}mm".format(np.sqrt(linalg.norm(res[0:3]) ** 2 - res[3])))
+        '''
 
 
 

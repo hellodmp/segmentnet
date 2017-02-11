@@ -1,5 +1,7 @@
 import dicom
 import copy
+from os import listdir
+from os.path import isfile, isdir, join, splitext
 
 class RTExport(object):
     sourcePath = None
@@ -81,6 +83,19 @@ class RTExport(object):
         roiContourList = self.destDs.ROIContours
         roiContourList.append(roiContour)
         print roiContour
+
+    def getList(self, path):
+        path_list = [path+"/"+f for f in listdir(path) if isfile(join(path, f)) and f.startswith('CT')]
+        image_list = []
+        for path in path_list:
+            image_data = self.dicom.read_file(path)
+            sliceLocation = image_data.SliceLocation
+            sopInstanceUID = image_data.SOPInstanceUID
+            startPosition = image_data.ImagePosition
+            image_list.append((sliceLocation,sopInstanceUID,startPosition))
+        image_list.sort()
+        sorted(image_list, key=lambda data : data[0])
+        return image_list
 
     def save(self):
         self.destDs.save_as(self.destPath)
