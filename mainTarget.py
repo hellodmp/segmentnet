@@ -14,10 +14,10 @@ params['ModelParams']['numcontrolpoints']=2
 params['ModelParams']['sigma']=15
 params['ModelParams']['device']=0
 
-params['ModelParams']['prototxtTrain']=os.path.join(basePath,'Prototxt/train_noPooling_ResNet_cinque.prototxt')
-params['ModelParams']['prototxtTest']=os.path.join(basePath,'Prototxt/test_noPooling_ResNet_cinque.prototxt')
-#params['ModelParams']['snapshot']=0
-params['ModelParams']['snapshot']=58000
+params['ModelParams']['prototxtTrain']=os.path.join(basePath,'Prototxt/train_noPooling_ResNet_cinque_target.prototxt')
+params['ModelParams']['prototxtTest']=os.path.join(basePath,'Prototxt/test_noPooling_ResNet_cinque_target.prototxt')
+params['ModelParams']['snapshot']=0
+#params['ModelParams']['snapshot']=58000
 params['ModelParams']['dirTrain']=os.path.join(basePath,'Dataset/data')
 params['ModelParams']['dirTest']=os.path.join(basePath,'Dataset/Test/V16609')
 params['ModelParams']['dirResult']=os.path.join(basePath,'Results') #where we need to save the results (relative to the base path)
@@ -30,7 +30,7 @@ params['ModelParams']['nProc'] = 4 #the number of threads to do data augmentatio
 
 
 #params of the DataManager
-params['DataManagerParams']['labelList'] = ["Urinary Bladder","FemoralHead"]
+params['DataManagerParams']['labelList'] = ["CTV"]
 params['DataManagerParams']['dstRes'] = np.asarray([1.8,1.8,5.0],dtype=float)
 #params['DataManagerParams']['NumVolSize'] = np.asarray([128,128,64],dtype=int)
 params['DataManagerParams']['NumVolSize'] = np.asarray([192,192,64],dtype=int)
@@ -39,8 +39,8 @@ params['DataManagerParams']['normDir'] = False #if rotates the volume according 
 
 model=VN.VNet(params)
 
-#model.train()
-model.test()
+model.train()
+#model.test()
 
 '''
 model=VN.VNet(params)

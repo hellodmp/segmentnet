@@ -12,7 +12,7 @@ def createImage():
     '''
     Extractor = sitk.ExtractImageFilter()
     Extractor.SetSize( [100,100,0] )
-    image = Extractor.SetIndex( [0,0,0] )
+    image = Extractor.SetIndex([0,0,0])
     '''
     segmented_surface = sitk.LabelContour(inputImage)
     edges = sitk.GetArrayFromImage(segmented_surface)

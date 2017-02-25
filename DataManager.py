@@ -5,6 +5,8 @@ from os import listdir
 from os.path import isfile, isdir, join, splitext
 import utilities
 from RTExport import RTExport
+from scipy import ndimage
+from skimage import measure
 
 class DataManager(object):
     params=None
@@ -17,7 +19,7 @@ class DataManager(object):
     sitkImages=None
     sitkGT=None
     meanIntensityTrain = None
-    label_list = ["Urinary Bladder","FemoralHead"]
+    #label_list = ["Urinary Bladder","FemoralHead"]
     #label_list = ["CTV","PTV"]
 
     def __init__(self, srcFolder, resultsDir, parameters):
@@ -54,10 +56,10 @@ class DataManager(object):
         spacing = self.sitkImages[key][0].GetSpacing()
         manager = LabelManager(self.srcFolder, spacing)
         manager.createLabelFileList()
-        self.sitkGT = manager.load_labels(self.label_list)
+        self.sitkGT = manager.load_labels(self.params['labelList'])
 
     def loadTestData(self):
-        self.createImageFileList()
+        self.fileList = [self.srcFolder]
         self.loadImages()
         '''
         # load labels
@@ -122,165 +124,59 @@ class DataManager(object):
             ret[key] = result_list
         return ret
 
+    def filter(self, dat):
+        (w,h,d) = dat.shape
+        for i in range(0,d):
+            count = np.sum(dat[:,:,i])
+            if count < 40:
+                dat[:, :, i] = np.zeros((w,h),dtype=float)
+        return dat
 
-    def pointSort(self, points):
-        start_point = points[0]
-        result_list = [[]]
-        threshold = 40
-        count = len(points)
-        result_index = 0
-        for i in range(count):
-            index = 0
-            min_value = 10000
-            for j in range(len(points)):
-                dis = abs(start_point[0] - points[j][0]) + abs(start_point[1] - points[j][1])
-                if dis < min_value:
-                    min_value = dis
-                    index = j
-            if min_value > threshold:
-                result_list.append([points[0]])
-                result_index = len(result_list) -1
-                start_point = points[0]
-                del points[0]
-            else :
-                result_list[result_index].append(points[index])
-                start_point = points[index]
-                del points[index]
-        #result_list = left_list.extend(right_list)
-        return result_list[0]
+    def result2Points(self, result, dicomPath):
+        result = ndimage.median_filter(result, 9)
+        #result = filter(result)
+        img = self.sitkImages[dicomPath][0]
+        factor = np.asarray([self.params['dstRes'][0], self.params['dstRes'][1], self.params['dstRes'][2]]) \
+                 / [img.GetSpacing()[0], img.GetSpacing()[1], img.GetSpacing()[2]]
 
-    def transfer_contour(self, edges, edge_indexes):
-        index_list = []
-        index = edge_indexes[0][0]
-        start = 0
-        for i in range(len(edge_indexes[0])):
-            if edge_indexes[0][i] != index:
-                index_list.append((index, start, i - start))
-                start = i
-                index = edge_indexes[0][start]
-        index_list.append((index, start, len(edge_indexes[0]) - start))
-
+        newSize = np.asarray(result.shape * factor, dtype=int)
+        start = (img.GetSize() - newSize) / 2
         points_list = []
-        for (index, start, count) in index_list:
-            sub_edges0 = edge_indexes[0][start:start + count]
-            sub_edges1 = edge_indexes[1][start:start + count]
-            sub_edges2 = edge_indexes[2][start:start + count]
-            # Note the reversed order of access between SimpleITK and numpy (z,y,x)
-            points = [edges.TransformIndexToPhysicalPoint([int(x), int(y), int(z)]) \
-                               for z, y, x in zip(sub_edges0, sub_edges1, sub_edges2)]
-            points = self.pointSort(points)
-            points_list.append((index,points))
+        for i in range(result.shape[2]):
+            temp_list = []
+            contours = measure.find_contours(np.transpose(result[:, :, i], [1, 0]), 0.1)
+            for contour in contours:
+                if len(contour) < 20:
+                    continue
+                points = contour * factor[0:2]
+                points += start[0:2]
+                points = points * img.GetSpacing()[0:2]
+                temp_list.append(points)
+            points_list.append((i + start[2], temp_list))
         return points_list
 
-
-    def writeResultsFromNumpyLabel(self, result, key):
-        img = self.sitkImages[key][0]
-
-        factor = np.asarray([self.params['dstRes'][0], self.params['dstRes'][1],
-                             self.params['dstRes'][2]]) / [img.GetSpacing()[0], img.GetSpacing()[1], img.GetSpacing()[2]]
-        factorSize = np.asarray(result.shape * factor, dtype=float)
-        newSize = np.max([factorSize, self.params['NumVolSize']], axis=0)
-        newSize = newSize.astype(dtype=int)
-        label = np.zeros(img.GetSize(), dtype=np.float32)
-
-        result_image = sitk.GetImageFromArray(np.transpose(result, [2, 1, 0]))
-        result_image.SetSpacing(self.params['dstRes'])
-
-        resampler = sitk.ResampleImageFilter()
-        resampler.SetReferenceImage(result_image)
-        resampler.SetOutputSpacing(img.GetSpacing())
-        resampler.SetSize(newSize)
-        resampler.SetInterpolator(sitk.sitkLinear)
-        imgResampled = resampler.Execute(result_image)
-
-        imgNum = np.transpose(sitk.GetArrayFromImage(imgResampled).astype(dtype=float), [1, 2, 0])
-        start = (img.GetSize() - np.array(imgNum.shape)) / 2
-        end = start + imgNum.shape
-        label[start[0]:end[0], start[1]:end[1], start[2]:end[2]] = imgNum
-        result_image = sitk.GetImageFromArray(np.transpose(label, [2, 1, 0]))
-        result_image.SetSpacing(img.GetSpacing())
-
-        #utilities.sitk_show(label)
-        thfilter = sitk.BinaryThresholdImageFilter()
-        thfilter.SetInsideValue(1)
-        thfilter.SetOutsideValue(0)
-        thfilter.SetLowerThreshold(0.5)
-        toWrite = thfilter.Execute(result_image)
-
-        # connected component analysis
-        cc = sitk.ConnectedComponentImageFilter()
-        toWritecc = cc.Execute(sitk.Cast(toWrite, sitk.sitkUInt8))
-        #result_image = np.transpose(sitk.GetArrayFromImage(toWritecc).astype(dtype=float), [1, 2, 0])
-        #utilities.sitk_show(result_image)
-
-        edges = sitk.CannyEdgeDetection(sitk.Cast(toWritecc, sitk.sitkFloat32),
-                                        lowerThreshold=0.5, upperThreshold=1.0)
-        edge_indexes = np.where(sitk.GetArrayFromImage(edges) == 1.0)
-        point_list = self.transfer_contour(edges, edge_indexes)
-        source = "Dataset/Test/V16609"
-        dest = "Dataset/Test/test.dcm"
-        key = "Urinary Bladder"
-        rtExport = RTExport(source,dest)
-        rtExport.save(key,point_list)
-        print "ok"
-
-
     '''
-    def writeResultsFromNumpyLabel(self, result, key):
-        img = self.sitkImages[key][0]
+    def writeResultsFromNumpyLabel(self, result, dicomPath, structureName, sourcePath, destPath):
+        result = ndimage.median_filter(result, 9)
+        img = self.sitkImages[dicomPath][0]
+        factor = np.asarray([self.params['dstRes'][0], self.params['dstRes'][1],self.params['dstRes'][2]]) \
+                 / [img.GetSpacing()[0], img.GetSpacing()[1], img.GetSpacing()[2]]
 
-        factor = np.asarray([self.params['dstRes'][0], self.params['dstRes'][1],
-                             self.params['dstRes'][2]]) / [img.GetSpacing()[0], img.GetSpacing()[1], img.GetSpacing()[2]]
-        factorSize = np.asarray(result.shape * factor, dtype=float)
-        newSize = np.max([factorSize, self.params['NumVolSize']], axis=0)
-        newSize = newSize.astype(dtype=int)
-        label = np.zeros(img.GetSize(), dtype=np.float32)
+        newSize = np.asarray(result.shape * factor, dtype=int)
         start = (img.GetSize() - newSize) / 2
-        end = start + result.shape
-        label[start[0]:end[0],start[1]:end[1],start[2]:end[2]] = result
-
-        result_image = sitk.GetImageFromArray(np.transpose(label, [2, 1, 0]))
-        result_image.SetSpacing(self.params['dstRes'])
-
-        resampler = sitk.ResampleImageFilter()
-        resampler.SetReferenceImage(result_image)
-        resampler.SetOutputSpacing(img.GetSpacing())
-        resampler.SetSize(newSize)
-        resampler.SetInterpolator(sitk.sitkLinear)
-        #utilities.sitk_show(num_data)
-        thfilter = sitk.BinaryThresholdImageFilter()
-        thfilter.SetInsideValue(1)
-        thfilter.SetOutsideValue(0)
-        thfilter.SetLowerThreshold(0.5)
-        toWrite = thfilter.Execute(result_image)
-        # connected component analysis
-        cc = sitk.ConnectedComponentImageFilter()
-        toWritecc = cc.Execute(sitk.Cast(toWrite, sitk.sitkUInt8))
-
-        #arrCC = np.transpose(sitk.GetArrayFromImage(toWritecc).astype(dtype=float), [2, 1, 0])
-        #utilities.sitk_show(arrCC)
-        #edges = sitk.CannyEdgeDetection(sitk.Cast(toWritecc, sitk.sitkFloat32), lowerThreshold=0.5,upperThreshold=1.0, variance=(1.0, 1.0, 1.0))
-
-        edges = sitk.CannyEdgeDetection(sitk.Cast(toWritecc, sitk.sitkFloat32),
-                                        lowerThreshold=0.5,upperThreshold=1.0)
-        edge_indexes = np.where(sitk.GetArrayFromImage(edges) == 1.0)
-
-        # Note the reversed order of access between SimpleITK and numpy (z,y,x)
-        physical_points = [edges.TransformIndexToPhysicalPoint([int(x), int(y), int(z)]) \
-                           for z, y, x in zip(edge_indexes[0], edge_indexes[1], edge_indexes[2])]
-
-        # Setup and solve linear equation system.
-        A = np.ones((len(physical_points), 4))
-        b = np.zeros(len(physical_points))
-
-        for row, point in enumerate(physical_points):
-            A[row, 0:3] = -2 * np.array(point)
-            b[row] = -linalg.norm(point) ** 2
-
-        res, _, _, _ = linalg.lstsq(A, b)
-
-        print("The sphere's radius is: {0:.2f}mm".format(np.sqrt(linalg.norm(res[0:3]) ** 2 - res[3])))
-        '''
-
-
+        point_list = []
+        for i in range(result.shape[2]):
+            contours = measure.find_contours(np.transpose(result[:,:,i], [1, 0]), 0.3)
+            for contour in contours:
+                if len(contour) < 20:
+                    continue
+                points = contour*factor[0:2]
+                points += start[0:2]
+                points = points*img.GetSpacing()[0:2]
+                list.append(points)
+            point_list.append((i+start[2], list))
+        rtExport = RTExport(dicomPath, sourcePath, destPath)
+        rtExport.save(structureName, point_list)
+        print "ok"
+    '''
 

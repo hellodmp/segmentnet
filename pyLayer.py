@@ -28,7 +28,6 @@ class DiceLoss(caffe.Layer):
 
 
     def forward(self, bottom, top):
-
         dice = np.zeros(bottom[0].data.shape[0],dtype=np.float32)
         self.union = np.zeros(bottom[0].data.shape[0],dtype=np.float32)
         self.intersection = np.zeros(bottom[0].data.shape[0],dtype=np.float32)
