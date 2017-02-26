@@ -1,0 +1,45 @@
+# segmentnet
+install gpu driver and cudnn
+http://f.dataguru.cn/thread-660774-1-1.html
+
+3D caffe
+https://github.com/faustomilletari/3D-Caffe
+
+sudo apt-get install libprotobuf-dev libleveldb-dev libsnappy-dev libopencv-dev libhdf5-serial-dev protobuf-compiler
+sudo apt-get install --no-install-recommends libboost-all-dev
+sudo apt-get install libgflags-dev libgoogle-glog-dev liblmdb-dev
+
+https://github.com/BVLC/caffe/wiki/Ubuntu-16.04-or-15.10-Installation-Guide
+WITH_PYTHON_LAYER := 1
+INCLUDE_DIRS := $(PYTHON_INCLUDE) /usr/local/include /usr/include/hdf5/serial
+LIBRARY_DIRS := $(PYTHON_LIB) /usr/local/lib /usr/lib /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu/hdf5/serial
+
+make
+cp Makefile.config.example Makefile.config
+# Adjust Makefile.config (for example, if using Anaconda Python, or if cuDNN is desired)
+make all
+make test
+make runtest
+
+pycaffe
+sudo apt-get install python-scipy
+sudo apt-get install python-numpy
+
+
+ssh -L 4422:local.eastraycloud.com:4422 rtpacs
+ssh gpu
+
+ssh.zip
+Host gpu
+HostName 127.0.0.1
+Port 4422
+User rtpacs
+Compression yes
+IdentityFile ~/.ssh/id_rsa
+
+Host rtpacs
+HostName 112.124.5.110
+Port 4422
+User root
+Compression yes
+IdentityFile ~/.ssh/id_rsa
