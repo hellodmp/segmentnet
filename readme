@@ -1,6 +1,7 @@
 # segmentnet
 install gpu driver and cudnn
 http://f.dataguru.cn/thread-660774-1-1.html
+https://developer.nvidia.com/cuDNN
 
 3D caffe
 https://github.com/faustomilletari/3D-Caffe

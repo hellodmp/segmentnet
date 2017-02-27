@@ -22,6 +22,7 @@ params['ModelParams']['dirTrain']=os.path.join(basePath,'Dataset/data')
 params['ModelParams']['dirTest']=os.path.join(basePath,'Dataset/Test/V16609')
 params['ModelParams']['dirResult']=os.path.join(basePath,'Results') #where we need to save the results (relative to the base path)
 params['ModelParams']['dirSnapshots']=os.path.join(basePath,'Models/') #where to save the models while training
+params['ModelParams']['modelPath']=os.path.join(basePath,'Models/ctv/_iter_12000.caffemodel')
 params['ModelParams']['batchsize'] = 2 #the batchsize
 params['ModelParams']['numIterations'] = 100000 #the number of iterations
 #params['ModelParams']['baseLR'] = 0.0001 #the learning rate, initial one
@@ -37,10 +38,20 @@ params['DataManagerParams']['NumVolSize'] = np.asarray([192,192,64],dtype=int)
 params['DataManagerParams']['VolSize'] = np.asarray([128,128,16],dtype=int)
 params['DataManagerParams']['normDir'] = False #if rotates the volume according to its transformation in the mhd file. Not reccommended.
 
-model=VN.VNet(params)
 
-#model.train()
-model.test()
+if __name__ == "__main__":
+    source_path = sys.argv[1]
+    dest_path = sys.argv[2]
+    #dicom_path = sys.argv[3]
+    #params['ModelParams']['dirTest'] = dicom_path
+    model=VN.VNet(params)
+    #model.train()
+    model.test(source_path,dest_path)
+
+'''
+rtExport = RTExport(dicom_path, "Dataset/Test/RS.1.2.246.352.71.4.126422491061.189407.20150422102823.dcm",
+                    "Dataset/Test/test.dcm")
+'''
 
 '''
 model=VN.VNet(params)

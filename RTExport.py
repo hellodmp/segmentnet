@@ -8,20 +8,20 @@ import numpy as np
 
 class RTExport(object):
     dicomPath = None
-    sourceDosePath = None
-    destDosePath = None
+    sourceStructurePath = None
+    destStructurePath = None
     sourceDs = None
     destDs = None
     structureSetList = None
     roiObservationList = None
     roiContourList = None
 
-    def __init__(self, dicomPath, sourceDosePath, destDosePath):
+    def __init__(self, dicomPath, sourceStructurePath, destStructurePath):
         self.dicomPath = dicomPath
-        self.destDosePath = destDosePath
-        self.sourceDosePath = sourceDosePath
-        self.structurePath = [dicomPath + "/" + f for f in listdir(dicomPath) if isfile(join(dicomPath, f)) and f.startswith('RS')]
-        self.sourceDs = dicom.read_file(self.structurePath[0])
+        self.destStructurePath = destStructurePath
+        self.sourceStructurePath = sourceStructurePath
+        #self.structurePath = [dicomPath + "/" + f for f in listdir(dicomPath) if isfile(join(dicomPath, f)) and f.startswith('RS')]
+        self.sourceDs = dicom.read_file(self.sourceStructurePath)
         self.destDs = copy.deepcopy(self.sourceDs)
 
     def get_by_structure(self, structure_name):
@@ -131,7 +131,7 @@ class RTExport(object):
         self.addNewLabel(structureName, label_list)
 
     def save(self):
-        self.destDs.save_as(self.destDosePath)
+        self.destDs.save_as(self.destStructurePath)
 
 '''
 if __name__ == "__main__":

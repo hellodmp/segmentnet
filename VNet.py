@@ -162,16 +162,14 @@ class VNet(object):
         print dice_num
         return dice_num
 
-    '''
-    def test(self):
+    def test(self, sourcePath, destPath):
         self.dataManagerTest = DM.DataManager(self.params['ModelParams']['dirTest'],
                                               self.params['ModelParams']['dirResult'],
                                               self.params['DataManagerParams'])
         self.dataManagerTest.loadTestData()
 
         net = caffe.Net(self.params['ModelParams']['prototxtTest'],
-                        os.path.join(self.params['ModelParams']['dirSnapshots'],
-                                     "_iter_" + str(self.params['ModelParams']['snapshot']) + ".caffemodel"),
+                        os.path.join(self.params['ModelParams']['modelPath']),
                         caffe.TEST)
 
         numpyImages = self.dataManagerTest.getNumpyImages()
@@ -183,50 +181,7 @@ class VNet(object):
             numpyImages[key] /= std
 
         for dicom_path in numpyImages:
-            rtExport = RTExport(dicom_path, "Dataset/Test/RS.1.2.246.352.71.4.126422491061.189407.20150422102823.dcm", "Dataset/Test/test.dcm")
-            label_list = self.params['DataManagerParams']['labelList']
-            index_list = [(0,0),(1,0),(0,1),(1,1)]
-            xy_step = self.params['DataManagerParams']['NumVolSize'] - self.params['DataManagerParams']['VolSize']
-            #dest_path = [dicom_path + "/" + f for f in os.listdir(dicom_path) if isfile(join(dicom_path, f)) and f.startswith('RD')]
-            for j in range(len(label_list)):
-                step = self.params['DataManagerParams']['VolSize'][2]
-                result = np.zeros((self.params['DataManagerParams']['NumVolSize'][0],
-                                   self.params['DataManagerParams']['NumVolSize'][1],
-                                   self.params['DataManagerParams']['NumVolSize'][2]), dtype=float)
-                for i in range(self.params['DataManagerParams']['NumVolSize'][2] / step):
-                    image_input = numpyImages[dicom_path][:, :, i * step:(i + 1) * step]
-                    btch = np.reshape(image_input, [1, 1, image_input.shape[0], image_input.shape[1], image_input.shape[2]])
-                    net.blobs['data'].data[...] = btch
-                    out = net.forward()
-                    l = out["labelmap"]
-                    result[:, :, i * step:(i + 1) * step] = np.squeeze(l[0, j, :, :, :])
-                points_list = self.dataManagerTest.result2Points(result,dicom_path)
-                rtExport.addStructure(label_list[j], points_list)
-            rtExport.save()
-    '''
-
-    def test(self):
-        self.dataManagerTest = DM.DataManager(self.params['ModelParams']['dirTest'],
-                                              self.params['ModelParams']['dirResult'],
-                                              self.params['DataManagerParams'])
-        self.dataManagerTest.loadTestData()
-
-        net = caffe.Net(self.params['ModelParams']['prototxtTest'],
-                        os.path.join(self.params['ModelParams']['dirSnapshots'],
-                                     "_iter_" + str(self.params['ModelParams']['snapshot']) + ".caffemodel"),
-                        caffe.TEST)
-
-        numpyImages = self.dataManagerTest.getNumpyImages()
-        for key in numpyImages:
-            mean = np.mean(numpyImages[key][numpyImages[key] > 0])
-            std = np.std(numpyImages[key][numpyImages[key] > 0])
-
-            numpyImages[key] -= mean
-            numpyImages[key] /= std
-
-        for dicom_path in numpyImages:
-            rtExport = RTExport(dicom_path, "Dataset/Test/RS.1.2.246.352.71.4.126422491061.189407.20150422102823.dcm",
-                                "Dataset/Test/test.dcm")
+            rtExport = RTExport(dicom_path, sourcePath, destPath)
             label_list = self.params['DataManagerParams']['labelList']
             index_list = [(0, 0), (1, 0), (0, 1), (1, 1)]
             xy_step = self.params['DataManagerParams']['NumVolSize'] - self.params['DataManagerParams']['VolSize']
